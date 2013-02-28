@@ -195,8 +195,6 @@
     <ClInclude Include="ColorPicker\ScreenPicker.h" />
     <ClInclude Include="NppQCP.h" />
     <ClInclude Include="shared\PluginInterface.h" />
-    <ClInclude Include="DockingFeature\resource.h" />
-    <ClInclude Include="DockingFeature\Window.h" />
     <ClInclude Include="shared\Notepad_plus_msgs.h" />
     <ClInclude Include="shared\Scintilla.h" />
   </ItemGroup>

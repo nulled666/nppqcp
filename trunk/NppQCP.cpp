@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <shlwapi.h>
+#include <string.h>
 #include <strsafe.h>
 
 #include "ColorPicker\ColorPicker.h"
@@ -73,8 +74,7 @@ void InitCommandMenu() {
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)_ini_file_path);
 
 	// if config path doesn't exist, we create it
-	if (PathFileExists(_ini_file_path) == FALSE)
-	{
+	if (PathFileExists(_ini_file_path) == FALSE) {
 		::CreateDirectory(_ini_file_path, NULL);
 	}
 
@@ -239,33 +239,7 @@ bool ShowColorPicker(){
 	if (mark == 0 || mark != '#')
 		return false;
 
-	char hex_color[10];
-    ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_color);
-
-	// break - not a hex string
-	if (!is_hex(hex_color))
-		return false;
-
 	// passed -
-
-	// padding the 3 char hex into 6 char hex
-	if (len == 3){
-		char out[7];
-		if(!pad_hex(out, hex_color))
-			return false;
-		strcpy(hex_color, out);
-	}
-
-	// convert hex string to COLORREF
-	COLORREF color = hex2color(hex_color);
-
-	// prepare coordinates
-	POINT p;
-	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION , 0, selection_start);
-	p.y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION , 0, selection_start);
-	::ClientToScreen(h_scintilla, &p);
-
-	int lineHeight = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT , 0, 1); // all the same
 
 	// create the color picker if not created
 	if (!_pColorPicker) {
@@ -274,9 +248,24 @@ bool ShowColorPicker(){
 		::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
 	}
 
-	// set and show
-	_pColorPicker->Color(color);
+	// get hex text - scintilla only accept char
+	char hex_color[10];
+    ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_color);
+
+	if (!_pColorPicker->SetHexColor(hex_color)) {
+		// not a valid hex color string
+		return false;
+	}
+	
+	// prepare coordinates
+	POINT p;
+	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION , 0, selection_start);
+	p.y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION , 0, selection_start);
+	::ClientToScreen(h_scintilla, &p);
+	int lineHeight = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT , 0, 1); // all the same
 	_pColorPicker->PlaceWindow(p, lineHeight);
+
+	// set and show
 	_pColorPicker->Show(true);
 
 	// set the focus back to editor - don't break the keyboard action chain

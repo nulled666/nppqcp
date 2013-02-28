@@ -58,9 +58,11 @@ class ColorPicker {
 			return _current_color;
 		}
 
-		void HexColor(const TCHAR* hex_color);
-		void HexColor(TCHAR* out);
+		bool SetHexColor(char* hex_color);
+		void GetHexColor(char* out);
 
+		void SetRecentColor(const COLORREF *color[]);
+		void GetRecentColor(COLORREF *color[]);
 
 	protected:
 
