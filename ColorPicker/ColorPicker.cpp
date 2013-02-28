@@ -1,8 +1,12 @@
 
-#include <iostream>
 #include <math.h>
-#include <windowsx.h>
+
+#include <tchar.h>
 #include <strsafe.h>
+
+#include <stdio.h>
+#include <iostream>
+#include <windowsx.h>
 
 #include "ColorPicker.h"
 #include "ScreenPicker.h"
@@ -14,6 +18,9 @@
 #define SWATCH_BG_COLOR 0x666666
 
 
+///////////////////////////////////////////////////////////////////
+// GENERAL ROUTINES
+///////////////////////////////////////////////////////////////////
 void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 
 	if (IsCreated()) {
@@ -47,6 +54,59 @@ void ColorPicker::Destroy() {
 	::DeleteObject(_hbrush_swatch_bg);
 
 	::DestroyWindow(_color_popup);
+
+}
+
+void ColorPicker::Color(COLORREF color, bool is_rgb) {
+	
+	if (is_rgb) {
+		color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
+	}
+	
+	_current_color = color;
+	_current_color_found_in_palette = false;
+
+	DisplayNewColor(color);
+
+	// remove hover box
+	::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETCURSEL, -1, NULL);
+
+}
+
+bool ColorPicker::SetHexColor(char* hex_color) {
+
+	// check length
+	size_t len;
+	StringCbLengthA(hex_color, sizeof(hex_color), &len);
+	if(len != 3 || len != 6)
+		return false;
+
+	// check hex string
+	char hex_copy[16];
+	StringCbCopyA(hex_copy, sizeof(hex_copy), hex_color);
+	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
+	if(!is_hex)
+		return false;
+
+	StringCbCopyA(hex_copy, sizeof(hex_copy), hex_color);
+
+	// pad 3 char hex
+	if (len==3) {
+		hex_copy[0] = hex_color[0];
+		hex_copy[1] = hex_color[0];
+		hex_copy[2] = hex_color[1];
+		hex_copy[3] = hex_color[1];
+		hex_copy[4] = hex_color[2];
+		hex_copy[5] = hex_color[2];
+		hex_copy[6] = '\0';
+	}
+
+	// convert to color value - color order is revered
+	COLORREF rgb = strtol(hex_copy, NULL, 16);
+
+	Color(rgb, true);
+
+	return true;
 
 }
 
@@ -153,26 +213,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 
 }
 
-
-///////////////////////////////////////////////////////////////////
-// GENERAL ROUTINES
-///////////////////////////////////////////////////////////////////
-void ColorPicker::Color(COLORREF color, bool is_rgb)
-{
-	
-	if(is_rgb){
-		color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
-	}
-	
-	_current_color = color;
-	_current_color_found_in_palette = false;
-
-	DisplayNewColor(color);
-
-	// remove hover box
-	::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETCURSEL, -1, NULL);
-
-}
 
 
 ///////////////////////////////////////////////////////////////////
