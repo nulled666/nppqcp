@@ -1,3 +1,25 @@
+///////////////////////////////////////////////////////////////////
+/*
+
+USAGE:
+	create and show:
+		ColorPicker* pColorPicker = new ColorPicker();
+		pColorPicker->Create(hInstance, hwndParent);
+		pColorPicker->Color(RGB(255,0,128));
+		pColorPicker->SetParentRect(rc);
+		pColorPicker->Show(true);
+
+	listen to message:
+		WM_PICKUP_COLOR
+			User picked a color
+			LPARAM is the color in COLORREF format
+		WM_PICK_CANCEL
+			User cancelled the operation
+
+
+*/
+///////////////////////////////////////////////////////////////////
+
 
 #ifndef COLOR_PICKER_H
 #define COLOR_PICKER_H
@@ -13,12 +35,9 @@ class ColorPicker {
 
 	public:
 
-		ColorPicker() :	_color_popup(NULL) {};
+		ColorPicker() : _color_popup(NULL) {};
 
-		ColorPicker(COLORREF default_color) :
-			_color_popup(NULL), _current_color(default_color) {};
-
-		~ColorPicker(){};
+		~ColorPicker() {};
 
 		void Create(HINSTANCE instance, HWND parent, HWND message_window = NULL);
 		void Destroy();
@@ -38,11 +57,12 @@ class ColorPicker {
 		};
 	
 		// specify a message window for return value if needed
-		void SetMessageWindow( HWND hWnd ){
+		void SetMessageWindow(HWND hWnd) {
 			_message_window = hWnd;
 		}
 
-		void PlaceWindow(POINT point, int control_height = 0);
+		void SetParentRect(RECT rc);
+
 		void Show(bool show = true) const {
 			::ShowWindow(_color_popup, show ? SW_SHOW : SW_HIDE);
 		};

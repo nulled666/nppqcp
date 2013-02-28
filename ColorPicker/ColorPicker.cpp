@@ -96,7 +96,7 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 		hex_copy[3] = hex_color[1];
 		hex_copy[4] = hex_color[2];
 		hex_copy[5] = hex_color[2];
-		hex_copy[6] = '\0';
+		hex_copy[6] = L'\0';
 	}
 
 	// convert to color value - color order is revered
@@ -108,24 +108,29 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 
 }
 
-void ColorPicker::PlaceWindow(POINT point, int control_height) {
+// alter the parent rect to move the color popup
+void ColorPicker::SetParentRect(RECT rc) {
 
 	HMONITOR monitor = ::MonitorFromWindow(_color_popup, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO mi;
 	mi.cbSize = sizeof(MONITORINFO);
 	::GetMonitorInfo(monitor, (LPMONITORINFO)&mi);
 
-	if ((point.x + POPUP_WIDTH) > mi.rcWork.right) {
-		point.x = mi.rcWork.right - POPUP_WIDTH;
-	}
+	int x = 0, y = 0;
 
-	if ((point.y + POPUP_HEIGHT) > mi.rcWork.bottom) {
-		point.y = point.y - POPUP_HEIGHT;
+	if ((rc.left + POPUP_WIDTH) > mi.rcWork.right) {
+		x = mi.rcWork.right - POPUP_WIDTH;
 	}else{
-		point.y += control_height;
+		x = rc.left;
 	}
 
-    ::SetWindowPos(_color_popup, HWND_TOP, point.x, point.y, POPUP_WIDTH, POPUP_HEIGHT, SWP_SHOWWINDOW);
+	if ((rc.bottom + POPUP_HEIGHT) > mi.rcWork.bottom) {
+		y = rc.top - POPUP_HEIGHT;
+	}else{
+		y = rc.bottom;
+	}
+
+    ::SetWindowPos(_color_popup, HWND_TOP, x, y, POPUP_WIDTH, POPUP_HEIGHT, SWP_SHOWWINDOW);
 
 }
 
@@ -573,7 +578,7 @@ void ColorPicker::FillRecentColorData(){
 	// fill recent colors into first 2 rows of Color Palette
 	for(int i = 0; i < 5 ; i++){
 		_color_palette_data[0][i] = _recent_color_data[i];
-		_color_palette_data[1][i] = _recent_color_data[i+4];
+		_color_palette_data[1][i] = _recent_color_data[i+5];
 		int id = 14*i;
 		::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETITEMDATA , id, (LPARAM)_color_palette_data[0][i]);
 		::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETITEMDATA , id+1, (LPARAM)_color_palette_data[1][i]);

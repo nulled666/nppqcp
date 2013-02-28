@@ -253,6 +253,7 @@ bool ShowColorPicker(){
 
 	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_color));
 
+	// put current color to picker
 	if (!_pColorPicker->SetHexColor(hex_color)) {
 		// not a valid hex color string
 		return false;
@@ -263,8 +264,16 @@ bool ShowColorPicker(){
 	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION , 0, selection_start);
 	p.y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION , 0, selection_start);
 	::ClientToScreen(h_scintilla, &p);
-	int lineHeight = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT , 0, 1); // all the same
-	_pColorPicker->PlaceWindow(p, lineHeight);
+	 // all line height in scintilla is the same
+	int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT , 0, 1);
+
+	RECT rc;
+	rc.top = p.y;
+	rc.right = p.x; // not used anyway
+	rc.bottom = p.y + line_height;
+	rc.left = p.x;
+	
+	_pColorPicker->SetParentRect(rc);
 
 	// set and show
 	_pColorPicker->Show(true);
@@ -290,13 +299,14 @@ void HideColorPicker() {
 
 void WriteColorCodeToEditor(COLORREF color) {
 
-	// REVERT FOR OUTPUT
+	// convert to rgb color
 	color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
+	// Replace with new hex color string
+	// SCI_REPLACESEL only accept char*
 	char buff[10];
 	sprintf(buff, "%0*X", 6, color);
-
-	// SCI_REPLACESEL only accept char*
+		
 	HWND current_scintilla = GetScintilla();
 	::SendMessage(current_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
 
