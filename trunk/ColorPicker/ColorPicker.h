@@ -2,7 +2,7 @@
 #ifndef COLOR_PICKER_H
 #define COLOR_PICKER_H
 
-#include <Windows.h>
+#include <windows.h>
 
 #ifndef COLOR_PICKER_RESOURCE_H
 #include "ColorPicker.res.h"
@@ -58,8 +58,8 @@ class ColorPicker {
 			return _current_color;
 		}
 
-		bool SetHexColor(char* hex_color);
-		void GetHexColor(char* out);
+		bool SetHexColor(const wchar_t* hex_color);
+		void GetHexColor(wchar_t* out);
 
 		void SetRecentColor(const COLORREF *color[]);
 		void GetRecentColor(COLORREF *color[]);

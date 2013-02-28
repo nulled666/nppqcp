@@ -22,7 +22,7 @@ void ScreenPicker::Create(HINSTANCE inst, HWND parent){
 
 void ScreenPicker::create_mask_window(){
 		
-	static TCHAR szWindowClass[] = TEXT("np_screen_picker");
+	static wchar_t szWindowClass[] = L"np_screen_picker";
 	
 	WNDCLASSEX wc    = {0};
 	wc.cbSize        = sizeof(wc);

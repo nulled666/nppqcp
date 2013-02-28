@@ -7,16 +7,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <shlwapi.h>
-#include <string.h>
-#include <strsafe.h>
 
 #include "ColorPicker\ColorPicker.h"
 #include "ColorPicker\ColorPicker.res.h"
 
 
-const TCHAR kIniSection[] = TEXT("QCP");
-const TCHAR kIniKey[] = TEXT("enabled");
-const TCHAR kConfigFileName[] = TEXT("npp_plugin_qcp.ini");
+const wchar_t kIniSection[] = L"nppqcp";
+const wchar_t kIniKey[] = L"enabled";
+const wchar_t kConfigFileName[] = L"nppqcp.ini";
 
 
 //
@@ -27,7 +25,7 @@ FuncItem funcItem[kCommandCount];
 bool doCloseTag;
 
 
-TCHAR _ini_file_path[MAX_PATH];
+wchar_t _ini_file_path[MAX_PATH];
 bool _enable_color_code_highlight = false;
 
 
@@ -55,7 +53,7 @@ void PluginCleanUp() {
 
 	::WritePrivateProfileString(
 		kIniSection, kIniKey,
-		_enable_color_code_highlight ? TEXT("1") : TEXT("0") ,
+		_enable_color_code_highlight ? L"1" : L"0",
 		_ini_file_path
 	);
 
@@ -90,20 +88,19 @@ void InitCommandMenu() {
     //--------------------------------------------//
     // with function :
     // setCommand(int index,                      // zero based number to indicate the order of command
-    //            TCHAR *commandName,             // the command name that you want to see in plugin menu
+    //            wchar_t *commandName,             // the command name that you want to see in plugin menu
     //            PFUNCPLUGINCMD functionPointer, // the symbol of function (function pointer) associated with this command. The body should be defined below. See Step 4.
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
 
-	TCHAR text[200] = TEXT("Visit Website ");
-	SIZE_T size = ARRAYSIZE(text);
-	StringCchCat(text, size, TEXT(" (Version "));
-	StringCchCat(text, size, NPP_PLUGIN_VER);
-	StringCchCat(text, size, TEXT(")"));
+	wchar_t text[200] = L"Visit Website ";
+	wcscat(text, L" (Version ");
+	wcscat(text, NPP_PLUGIN_VER);
+	wcscat(text, L")");
 
-	setCommand(0, TEXT("Highlight Color Code for this File Type"), ToggleColorCodeHighlight, NULL, _enable_color_code_highlight);
-	setCommand(1, TEXT("---"), NULL, NULL, false);
+	setCommand(0, L"Highlight Color Code for this File Type", ToggleColorCodeHighlight, NULL, _enable_color_code_highlight);
+	setCommand(1, L"---", NULL, NULL, false);
 	setCommand(2, text, VisitWebsite, NULL, FALSE);
 
 }
@@ -112,14 +109,14 @@ void InitCommandMenu() {
 //
 // This function help you to initialize your plugin commands
 //
-bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey *sk, bool checkOnInit) {
+bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey *sk, bool checkOnInit) {
     if (index >= kCommandCount)
         return false;
 
     if (!pFunc)
         return false;
 
-    StringCchCopy(funcItem[index]._itemName, ARRAYSIZE(funcItem[index]._itemName), cmdName);
+    wcscpy(funcItem[index]._itemName, cmdName);
     funcItem[index]._pFunc = pFunc;
     funcItem[index]._init2Check = checkOnInit;
     funcItem[index]._pShKey = sk;
@@ -149,15 +146,15 @@ void ToggleColorCodeHighlight() {
 // visit nppqcp website
 void VisitWebsite() {
 
-	TCHAR url[200] = TEXT("http://www.github.com");
-	ShellExecute(NULL, TEXT("open"), url, NULL, NULL, SW_SHOWNORMAL);
+	wchar_t url[200] = L"http://www.github.com";
+	ShellExecute(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
 
 }
 
 // create a background window for message communication
 void CreateMessageWindow() {
 	
-	static TCHAR szWindowClass[] = TEXT("npp_qcp_msgwin");
+	static wchar_t szWindowClass[] = L"npp_qcp_msgwin";
 	
 	WNDCLASSEX wc    = {0};
 	wc.cbSize        = sizeof(wc);
@@ -249,8 +246,12 @@ bool ShowColorPicker(){
 	}
 
 	// get hex text - scintilla only accept char
-	char hex_color[10];
-    ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_color);
+	char hex_str[10];
+    ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_str);
+
+	wchar_t hex_color[10];
+
+	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_color));
 
 	if (!_pColorPicker->SetHexColor(hex_color)) {
 		// not a valid hex color string

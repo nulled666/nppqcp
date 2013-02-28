@@ -1,15 +1,14 @@
 
-#include <math.h>
-
-#include <tchar.h>
-#include <strsafe.h>
-
-#include <stdio.h>
-#include <iostream>
-#include <windowsx.h>
 
 #include "ColorPicker.h"
 #include "ScreenPicker.h"
+
+#include <stdio.h>
+#include <iostream>
+#include <math.h>
+
+#include <windowsx.h>
+
 
 #define BG_COLOR 0xEEEEEE
 #define POPUP_WIDTH 266
@@ -46,7 +45,7 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 
 void ColorPicker::Destroy() {
 
-	::RemoveProp(_color_palette, TEXT("parent"));
+	::RemoveProp(_color_palette, L"parent");
 
 	::DeleteObject(_hbrush_popup_bg);
 	::DeleteObject(_hbrush_swatch_current);
@@ -73,22 +72,21 @@ void ColorPicker::Color(COLORREF color, bool is_rgb) {
 
 }
 
-bool ColorPicker::SetHexColor(char* hex_color) {
+bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 
 	// check length
-	size_t len;
-	StringCbLengthA(hex_color, sizeof(hex_color), &len);
-	if(len != 3 || len != 6)
+	size_t len = wcslen(hex_color);
+	if(len != 3 && len != 6)
 		return false;
 
 	// check hex string
-	char hex_copy[16];
-	StringCbCopyA(hex_copy, sizeof(hex_copy), hex_color);
-	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
+	wchar_t hex_copy[16];
+	wcscpy(hex_copy, hex_color);
+	bool is_hex = (wcstok(hex_copy, L"0123456789ABCDEFabcdef") == NULL);
 	if(!is_hex)
 		return false;
 
-	StringCbCopyA(hex_copy, sizeof(hex_copy), hex_color);
+	wcscpy(hex_copy, hex_color);
 
 	// pad 3 char hex
 	if (len==3) {
@@ -102,7 +100,7 @@ bool ColorPicker::SetHexColor(char* hex_color) {
 	}
 
 	// convert to color value - color order is revered
-	COLORREF rgb = strtol(hex_copy, NULL, 16);
+	COLORREF rgb = wcstol(hex_copy, NULL, 16);
 
 	Color(rgb, true);
 
@@ -275,7 +273,7 @@ void ColorPicker::OnInitDialog(){
 	}
 	
 	// Subclassing the color palette control
-	::SetProp(_color_palette, TEXT("parent"), (HANDLE)this);
+	::SetProp(_color_palette, L"parent", (HANDLE)this);
 	_default_color_palette_winproc = (WNDPROC) ::SetWindowLongPtr(_color_palette, GWL_WNDPROC, (LONG)ColorPaletteWINPROC);			
 
 }
@@ -467,13 +465,13 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 	_new_color = color;
 
 	// update swatch color - lazy solution
-	::SetDlgItemText(_color_popup, IDC_NEW_COLOR, TEXT(""));
+	::SetDlgItemText(_color_popup, IDC_NEW_COLOR, L"");
 
 	// transform order for hex display
 	color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
 	
-	TCHAR hex[8];
-	StringCchPrintf(hex, ARRAYSIZE(hex), TEXT("#%0*X"), 6, color);
+	wchar_t hex[8];
+	wsprintf(hex, L"#%06X", color);
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, hex);
 
 }
@@ -486,7 +484,7 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 //Subclassing Procedure for palette
 LRESULT CALLBACK ColorPicker::ColorPaletteWINPROC(HWND hWnd, UINT message, WPARAM wParam,LPARAM lParam)
 {
-	ColorPicker* hPopup = (ColorPicker*) ::GetProp(hWnd,TEXT("parent"));
+	ColorPicker* hPopup = (ColorPicker*) ::GetProp(hWnd, L"parent");
 
 	return hPopup->ColorPaletteMessageHandle(hWnd, message, wParam, lParam);
 }
