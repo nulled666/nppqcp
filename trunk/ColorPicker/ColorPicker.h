@@ -35,8 +35,7 @@ class ColorPicker {
 
 	public:
 
-		ColorPicker() : _color_popup(NULL) {};
-
+		ColorPicker();
 		~ColorPicker() {};
 
 		void Create(HINSTANCE instance, HWND parent, HWND message_window = NULL);
@@ -116,6 +115,9 @@ class ColorPicker {
 		HBRUSH _hbrush_swatch_new;
 		HBRUSH _hbrush_swatch_bg;
 
+		HDC _hdc_desktop;
+
+		bool _is_pick_screen_color;
 		bool _is_color_chooser_shown;
 		
 		// main popup
@@ -127,7 +129,9 @@ class ColorPicker {
 		BOOL OnDrawItem(LPARAM lparam);
 		void OnSelectColor(LPARAM lparam);
 
-		void PickScreenColor();
+		void StartPickScreenColor();
+		void SampleScreenColor();
+		void EndPickScreenColor();
 
 		void ShowColorChooser();
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);

@@ -1,7 +1,6 @@
 
 
 #include "ColorPicker.h"
-#include "ScreenPicker.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -16,6 +15,41 @@
 
 #define SWATCH_BG_COLOR 0x666666
 
+ColorPicker::ColorPicker() {
+	
+	_instance = NULL;
+	_parent_window = NULL;
+	_color_popup = NULL;
+	
+	_message_window = NULL;
+
+
+	_pick_cursor = NULL;
+
+	_current_color_found_in_palette = false;
+	_current_color = 0x000000;
+	_new_color = 0x000000;
+
+	_color_palette_data[14][21] = NULL;
+	_recent_color_data[10] = NULL;
+		
+	_color_palette = NULL;
+	_default_color_palette_winproc = NULL;
+
+	_color_swatch_current = NULL;
+	_color_swatch_new = NULL;
+
+	_hbrush_popup_bg = NULL;
+	_hbrush_swatch_current = NULL;
+	_hbrush_swatch_new = NULL;
+	_hbrush_swatch_bg = NULL;
+
+	_hdc_desktop = NULL;
+
+	_is_pick_screen_color = false;
+	_is_color_chooser_shown = false;
+
+}
 
 ///////////////////////////////////////////////////////////////////
 // GENERAL ROUTINES
@@ -167,6 +201,18 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 			OnInitDialog();
 			return TRUE;
 		}
+		case WM_MOUSEMOVE: {
+			if (_is_pick_screen_color) {
+				SampleScreenColor();
+			}
+			return TRUE;
+		}
+		case WM_LBUTTONUP: {
+			if (_is_pick_screen_color) {
+				EndPickScreenColor();
+			}
+			return TRUE;
+		}
 		case WM_CTLCOLORDLG:
 		case WM_CTLCOLOR: {
 			if (_hbrush_popup_bg == NULL) {
@@ -183,7 +229,7 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		case WM_COMMAND: {
 			switch (LOWORD(wparam)) {
 				case ID_PICK: {
-					PickScreenColor();
+					StartPickScreenColor();
 					return TRUE;
 				}
                 case ID_MORE: {
@@ -224,17 +270,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 
 // WM_INITDIALOG
 void ColorPicker::OnInitDialog(){
-	
-	// initialize private variables
-	_current_color_found_in_palette = false;
-	_current_color = 0;
-	_new_color = 0;
-	_is_color_chooser_shown = false;
-	
-	_hbrush_popup_bg = NULL;
-	_hbrush_swatch_bg = NULL;
-	_hbrush_swatch_current = NULL;
-	_hbrush_swatch_new = NULL;
 
 	_color_palette = ::GetDlgItem(_color_popup, IDC_COLOR_PALETTE);
 	_color_swatch_current = ::GetDlgItem(_color_popup, IDC_OLD_COLOR);
@@ -402,14 +437,42 @@ void ColorPicker::OnSelectColor(LPARAM lparam){
 }
 
 // WM_COMMAND -> ID_PICK
-// pick color from screen
-void ColorPicker::PickScreenColor(){
+// track mouse
+void ColorPicker::StartPickScreenColor(){
 	
-	ScreenPicker* pScreenPicker = new ScreenPicker();
-
-	// TODO: finish this feature
+	if (_hdc_desktop==NULL) {
+		_hdc_desktop = ::GetDC(HWND_DESKTOP);
+	}
+	::SetCapture(_color_popup);
+	_is_pick_screen_color = true;
 
 }
+
+// WM_MOUSEMOVE - when _is_pick_screen_color=true
+// show current color on screen
+void ColorPicker::SampleScreenColor(){
+
+	POINT p;
+	::GetCursorPos(&p);
+	
+	COLORREF color = ::GetPixel(_hdc_desktop, p.x, p.y);
+
+	DisplayNewColor(color);
+
+}
+
+// WM_LBUTTONUP - when _is_pick_screen_color=true
+// pick color from screen
+void ColorPicker::EndPickScreenColor(){
+	
+	if (_hdc_desktop!=NULL) {
+		::ReleaseDC(HWND_DESKTOP, _hdc_desktop);
+	}
+	::ReleaseCapture();
+	_is_pick_screen_color = false;
+
+}
+
 
 // WM_COMMAND -> ID_MORE
 // show the native color chooser

@@ -185,14 +185,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ColorPicker\ColorPicker.cpp" />
-    <ClCompile Include="ColorPicker\ScreenPicker.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="NppQCP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ColorPicker\ColorPicker.h" />
     <ClInclude Include="ColorPicker\ColorPicker.res.h" />
-    <ClInclude Include="ColorPicker\ScreenPicker.h" />
     <ClInclude Include="NppQCP.h" />
     <ClInclude Include="shared\PluginInterface.h" />
     <ClInclude Include="shared\Notepad_plus_msgs.h" />
