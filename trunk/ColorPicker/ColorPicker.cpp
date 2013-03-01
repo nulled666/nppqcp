@@ -44,8 +44,6 @@ ColorPicker::ColorPicker() {
 	_hbrush_swatch_new = NULL;
 	_hbrush_swatch_bg = NULL;
 
-	_hdc_desktop = NULL;
-
 	_is_pick_screen_color = false;
 	_is_color_chooser_shown = false;
 
@@ -440,10 +438,9 @@ void ColorPicker::OnSelectColor(LPARAM lparam){
 // track mouse
 void ColorPicker::StartPickScreenColor(){
 	
-	if (_hdc_desktop==NULL) {
-		_hdc_desktop = ::GetDC(HWND_DESKTOP);
-	}
 	::SetCapture(_color_popup);
+	
+	::SetCursor(_pick_cursor);
 	_is_pick_screen_color = true;
 
 }
@@ -455,7 +452,9 @@ void ColorPicker::SampleScreenColor(){
 	POINT p;
 	::GetCursorPos(&p);
 	
-	COLORREF color = ::GetPixel(_hdc_desktop, p.x, p.y);
+	HDC hdc = ::GetDC(HWND_DESKTOP);
+	COLORREF color = ::GetPixel(hdc, p.x, p.y);
+	::ReleaseDC(HWND_DESKTOP, hdc);
 
 	DisplayNewColor(color);
 
@@ -464,11 +463,10 @@ void ColorPicker::SampleScreenColor(){
 // WM_LBUTTONUP - when _is_pick_screen_color=true
 // pick color from screen
 void ColorPicker::EndPickScreenColor(){
-	
-	if (_hdc_desktop!=NULL) {
-		::ReleaseDC(HWND_DESKTOP, _hdc_desktop);
-	}
+
 	::ReleaseCapture();
+
+	::SetCursor(::LoadCursor(NULL, IDC_ARROW));
 	_is_pick_screen_color = false;
 
 }

@@ -115,8 +115,6 @@ class ColorPicker {
 		HBRUSH _hbrush_swatch_new;
 		HBRUSH _hbrush_swatch_bg;
 
-		HDC _hdc_desktop;
-
 		bool _is_pick_screen_color;
 		bool _is_color_chooser_shown;
 		
