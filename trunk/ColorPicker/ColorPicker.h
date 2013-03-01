@@ -57,8 +57,8 @@ class ColorPicker {
 		};
 	
 		// specify a message window for return value if needed
-		void SetMessageWindow(HWND hWnd) {
-			_message_window = hWnd;
+		void SetMessageWindow(HWND hwnd) {
+			_message_window = hwnd;
 		}
 
 		void SetParentRect(RECT rc);
