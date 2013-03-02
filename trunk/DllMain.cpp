@@ -73,18 +73,23 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 		case SCN_ZOOM:
 		case SCN_SCROLLED: {
 			HideColorPicker();
+			_is_color_picker_shown = false;
 			break;
 		}
 		case SCN_MODIFIED: {
 			if (notifyCode->modificationType & SC_MOD_DELETETEXT
 				|| notifyCode->modificationType & SC_MOD_INSERTTEXT) {
                 HighlightColorCode();
+				HideColorPicker();
+				_is_color_picker_shown = false;
             }
             break;
 		}		
 		case NPPN_LANGCHANGED:
 		case NPPN_BUFFERACTIVATED: {
             HighlightColorCode();
+			HideColorPicker();
+			_is_color_picker_shown = false;
             break;
 		}
 		default: {
