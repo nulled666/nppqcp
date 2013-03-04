@@ -369,7 +369,6 @@ void LoadRecentColor(){
 		return;
 
 	COLORREF colors[10];
-	int color;
 	wchar_t key[20];
 
 	for (int i=0; i<10; i++) {
