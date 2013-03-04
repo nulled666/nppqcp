@@ -77,6 +77,7 @@ void VisitWebsite();
 HWND GetScintilla();
 
 void CreateMessageWindow();
+void DestroyMessageWindow();
 LRESULT CALLBACK MessageWindowWINPROC(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void CreateColorPicker();

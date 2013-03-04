@@ -1,6 +1,7 @@
 
 
 #include "ColorPicker.h"
+#include "ScreenPicker.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -44,8 +45,9 @@ ColorPicker::ColorPicker() {
 	_hbrush_swatch_new = NULL;
 	_hbrush_swatch_bg = NULL;
 
-	_is_pick_screen_color = false;
 	_is_color_chooser_shown = false;
+
+	_pScreenPicker = NULL;
 
 }
 
@@ -79,12 +81,12 @@ void ColorPicker::Destroy() {
 
 	::RemoveProp(_color_palette, L"parent");
 
+	::DestroyWindow(_color_popup);
+
 	::DeleteObject(_hbrush_popup_bg);
 	::DeleteObject(_hbrush_swatch_current);
 	::DeleteObject(_hbrush_swatch_new);
 	::DeleteObject(_hbrush_swatch_bg);
-
-	::DestroyWindow(_color_popup);
 
 }
 
@@ -131,7 +133,7 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 		hex_copy[6] = L'\0';
 	}
 
-	// convert to color value - color order is revered
+	// convert to color value - color order is invert to COLORREF
 	COLORREF rgb = wcstol(hex_copy, NULL, 16);
 
 	Color(rgb, true);
@@ -169,20 +171,23 @@ void ColorPicker::SetParentRect(RECT rc) {
 BOOL CALLBACK ColorPicker::ColorPopupWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
-		case WM_MEASUREITEM: {
-			LPMEASUREITEMSTRUCT lpmis = (LPMEASUREITEMSTRUCT)lparam; 
-			lpmis->itemHeight = 12; 
-			lpmis->itemWidth = 12;
-			return TRUE;
-		}
-		case WM_INITDIALOG: {
+		case WM_INITDIALOG:
+		{
 			ColorPicker *pColorPicker = (ColorPicker*)(lparam);
 			pColorPicker->_color_popup = hwnd;
 			::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)lparam);
 			pColorPicker->ColorPopupMessageHandle(message, wparam, lparam);
 			return TRUE;
 		}
-		default: {
+		case WM_MEASUREITEM:
+		{
+			LPMEASUREITEMSTRUCT lpmis = (LPMEASUREITEMSTRUCT)lparam; 
+			lpmis->itemHeight = 12; 
+			lpmis->itemWidth = 12;
+			return TRUE;
+		}
+		default:
+		{
 			ColorPicker *pColorPicker = reinterpret_cast<ColorPicker*>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
 			if (!pColorPicker)
 				return FALSE;
@@ -195,36 +200,40 @@ BOOL CALLBACK ColorPicker::ColorPopupWINPROC(HWND hwnd, UINT message, WPARAM wpa
 BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, LPARAM lparam){
 
 	switch (message) {
-		case WM_INITDIALOG: {
+		case WM_INITDIALOG:
+		{
 			OnInitDialog();
 			return TRUE;
 		}
-		case WM_MOUSEMOVE: {
-			if (_is_pick_screen_color) {
-				SampleScreenColor();
-			}
-			return TRUE;
-		}
-		case WM_LBUTTONUP: {
-			if (_is_pick_screen_color) {
-				EndPickScreenColor();
-			}
-			return TRUE;
-		}
 		case WM_CTLCOLORDLG:
-		case WM_CTLCOLOR: {
+		case WM_CTLCOLOR:
+		{
 			if (_hbrush_popup_bg == NULL) {
 				_hbrush_popup_bg = CreateSolidBrush(BG_COLOR);
 			}
             return (LRESULT) _hbrush_popup_bg;
 		}
-		case WM_CTLCOLORSTATIC: {
+		case WM_CTLCOLORSTATIC:
+		{
 			return OnCtlColorStatic(lparam);
 		}
-		case WM_DRAWITEM: {
+		case WM_DRAWITEM:
+		{
 			return OnDrawItem(lparam);
 		}
-		case WM_COMMAND: {
+		case WM_SCREEN_HOVER_COLOR:
+		{
+			DisplayNewColor((COLORREF)lparam);
+			return TRUE;
+		}
+		case WM_SCREEN_PICK_COLOR:
+		{
+			::SetActiveWindow(_color_popup);
+			::SendMessage(_message_window, WM_PICKUP_COLOR, lparam, 0);
+			return TRUE;
+		}
+		case WM_COMMAND:
+		{
 			switch (LOWORD(wparam)) {
 				case ID_PICK: {
 					StartPickScreenColor();
@@ -246,7 +255,8 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 				}
             }
 		}
-		case WM_ACTIVATE: {
+		case WM_ACTIVATE:
+		{
 			if (LOWORD(wparam) == WA_INACTIVE) {
 				if (!_is_color_chooser_shown) {
 					::SendMessage(_message_window, WM_PICKUP_CANCEL, 0, 0);
@@ -274,8 +284,8 @@ void ColorPicker::OnInitDialog(){
 	_color_swatch_new = ::GetDlgItem(_color_popup, IDC_NEW_COLOR);
 
 	// dialog control ui stuff
-	_pick_cursor = LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
-	HICON hIcon = (HICON)LoadImage(_instance, MAKEINTRESOURCE(IDI_PICKER), IMAGE_ICON, 16, 16, 0);
+	_pick_cursor = ::LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
+	HICON hIcon = (HICON)::LoadImage(_instance, MAKEINTRESOURCE(IDI_PICKER), IMAGE_ICON, 16, 16, 0);
 
 	::SetWindowPos(_color_palette, NULL, 6, 6, 253, 169, SWP_NOACTIVATE);
 
@@ -323,27 +333,31 @@ LRESULT ColorPicker::OnCtlColorStatic(LPARAM lparam) {
 	DWORD ctrl_id = ::GetDlgCtrlID((HWND)lparam);
 
 	switch (ctrl_id) {
-		case IDC_OLD_COLOR: {
+		case IDC_OLD_COLOR:
+		{
 			if(_hbrush_swatch_current != NULL) {
 				::DeleteObject(_hbrush_swatch_current);
 			}
 			_hbrush_swatch_current = CreateSolidBrush(_current_color);
 			return (LRESULT)_hbrush_swatch_current;
 		}
-		case IDC_NEW_COLOR: {
+		case IDC_NEW_COLOR:
+		{
 			if(_hbrush_swatch_new != NULL) {
 				::DeleteObject(_hbrush_swatch_new);
 			}
 			_hbrush_swatch_new = CreateSolidBrush(_new_color);
 			return (LRESULT)_hbrush_swatch_new;
 		}
-		case IDC_COLOR_BG: {
+		case IDC_COLOR_BG:
+		{
 			if (_hbrush_swatch_bg == NULL) {
 				_hbrush_swatch_bg = CreateSolidBrush(SWATCH_BG_COLOR);
 			}
 			return (LRESULT)_hbrush_swatch_bg;
 		}
-		default: {
+		default:
+		{
 			return FALSE;
 		}
 	}
@@ -371,7 +385,8 @@ BOOL ColorPicker::OnDrawItem(LPARAM lParam){
 	if (pdis->CtlID == IDC_COLOR_PALETTE) {
 		
 		switch (pdis->itemAction) {
-			case ODA_DRAWENTIRE: {
+			case ODA_DRAWENTIRE:
+			{
 				rc = pdis->rcItem;
 				rc.right++;
 				rc.bottom++;
@@ -383,7 +398,8 @@ BOOL ColorPicker::OnDrawItem(LPARAM lParam){
 				::DeleteObject(hbrush);
 				// *** FALL THROUGH ***
 			}
-			case ODA_SELECT: {
+			case ODA_SELECT:
+			{
 				rc = pdis->rcItem;
 				rc.right++;
 				rc.bottom++;
@@ -408,7 +424,8 @@ BOOL ColorPicker::OnDrawItem(LPARAM lParam){
 				}
 				break;
 			}
-			default: {
+			default:
+			{
 				// nothing
 			}
 		}
@@ -438,36 +455,12 @@ void ColorPicker::OnSelectColor(LPARAM lparam){
 // track mouse
 void ColorPicker::StartPickScreenColor(){
 	
-	::SetCapture(_color_popup);
-	
-	::SetCursor(_pick_cursor);
-	_is_pick_screen_color = true;
+	if (!_pScreenPicker) {
+		_pScreenPicker = new ScreenPicker();
+		_pScreenPicker->Create(_instance, _color_popup);
+	}
 
-}
-
-// WM_MOUSEMOVE - when _is_pick_screen_color=true
-// show current color on screen
-void ColorPicker::SampleScreenColor(){
-
-	POINT p;
-	::GetCursorPos(&p);
-	
-	HDC hdc = ::GetDC(HWND_DESKTOP);
-	COLORREF color = ::GetPixel(hdc, p.x, p.y);
-	::ReleaseDC(HWND_DESKTOP, hdc);
-
-	DisplayNewColor(color);
-
-}
-
-// WM_LBUTTONUP - when _is_pick_screen_color=true
-// pick color from screen
-void ColorPicker::EndPickScreenColor(){
-
-	::ReleaseCapture();
-
-	::SetCursor(::LoadCursor(NULL, IDC_ARROW));
-	_is_pick_screen_color = false;
+	_pScreenPicker->Start();
 
 }
 
@@ -524,6 +517,7 @@ UINT_PTR CALLBACK ColorPicker::ColorChooserWINPROC(HWND hwnd, UINT message, WPAR
 }
 
 
+// show the new color on popup
 void ColorPicker::DisplayNewColor(COLORREF color){
 
 	if(color == _new_color) return;

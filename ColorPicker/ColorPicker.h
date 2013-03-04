@@ -24,6 +24,7 @@ USAGE:
 #ifndef COLOR_PICKER_H
 #define COLOR_PICKER_H
 
+#include "ScreenPicker.h"
 #include <windows.h>
 
 #ifndef COLOR_PICKER_RESOURCE_H
@@ -94,7 +95,6 @@ class ColorPicker {
 	
 		HWND _message_window;
 
-
 		HCURSOR _pick_cursor;
 
 		bool _current_color_found_in_palette;
@@ -115,7 +115,6 @@ class ColorPicker {
 		HBRUSH _hbrush_swatch_new;
 		HBRUSH _hbrush_swatch_bg;
 
-		bool _is_pick_screen_color;
 		bool _is_color_chooser_shown;
 		
 		// main popup
@@ -127,16 +126,6 @@ class ColorPicker {
 		BOOL OnDrawItem(LPARAM lparam);
 		void OnSelectColor(LPARAM lparam);
 
-		void StartPickScreenColor();
-		void SampleScreenColor();
-		void EndPickScreenColor();
-
-		void ShowColorChooser();
-		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-
-		void DisplayNewColor(COLORREF color);
-	
-
 		// palette
 		static LRESULT CALLBACK ColorPaletteWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 		BOOL CALLBACK ColorPaletteMessageHandle(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
@@ -146,6 +135,18 @@ class ColorPicker {
 		void FillRecentColorData();
 		void GenerateColorPaletteData();
 		void OnColorPaletteHover(LPARAM lparam);
+
+		// screen color picker
+		ScreenPicker* _pScreenPicker;
+		void StartPickScreenColor();
+		void SampleScreenColor();
+		void EndPickScreenColor();
+
+		// windows color chooser
+		void ShowColorChooser();
+		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+		void DisplayNewColor(COLORREF color);
 
 		int round(double number);
 
