@@ -29,6 +29,7 @@ void ScreenPicker::Create(HINSTANCE inst, HWND parent){
 	_parent_window = parent;
 	
 	CreateMaskWindow();
+	CreateInfoWindow();
 
 }
 
@@ -60,8 +61,6 @@ void ScreenPicker::CreateMaskWindow(){
 
 }
 
-
-// message proccessor
 LRESULT CALLBACK ScreenPicker::MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
@@ -82,7 +81,6 @@ LRESULT CALLBACK ScreenPicker::MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM
 		}
 	}
 }
-
 
 BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam) {
 
@@ -134,6 +132,7 @@ void ScreenPicker::Start(){
 void ScreenPicker::End(){
 
 	::SetWindowPos(_mask_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW);
+	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 0, 0, SWP_HIDEWINDOW);
 
 }
 
@@ -147,5 +146,63 @@ void ScreenPicker::SampleColor(LPARAM lparam){
 	::ReleaseDC(HWND_DESKTOP, hdc);
 
 	::SendMessage(_parent_window, WM_SCREEN_HOVER_COLOR, 0, (LPARAM)_current_color);
+
+	::SetWindowPos(_info_window, HWND_TOP, x+10, y-130, 120, 120, SWP_SHOWWINDOW);
+
+}
+
+
+// the information window
+void ScreenPicker::CreateInfoWindow(){
+		
+	
+	_info_window = ::CreateDialogParam(_instance, MAKEINTRESOURCE(IDD_SCREEN_PICKER_POPUP), NULL, (DLGPROC)InfoWindowWINPROC, (LPARAM)this);
+
+	
+}
+
+BOOL CALLBACK ScreenPicker::InfoWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+
+	switch (message) {
+		case WM_INITDIALOG:
+		{
+			ScreenPicker *pScreenPicker = (ScreenPicker*)(lparam);
+			pScreenPicker->_info_window = hwnd;
+			::SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)lparam);
+			pScreenPicker->InfoWindowMessageHandle(message, wparam, lparam);
+			return TRUE;
+		}
+		default:
+		{
+			ScreenPicker *pScreenPicker = reinterpret_cast<ScreenPicker*>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
+			if (!pScreenPicker)
+				return FALSE;
+			return pScreenPicker->InfoWindowMessageHandle(message, wparam, lparam);
+		}
+	}
+
+}
+
+
+BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam) {
+
+	switch (message) {
+		case WM_INITDIALOG:
+		{
+			PrepareInfoWindow();
+			return TRUE;
+		}
+		default:
+		{
+			return FALSE;
+		}
+	}
+	
+}
+
+
+void ScreenPicker::PrepareInfoWindow(){
+
+	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 120, 120, SWP_SHOWWINDOW);
 
 }
