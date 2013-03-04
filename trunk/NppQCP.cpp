@@ -28,6 +28,8 @@ bool doCloseTag;
 wchar_t _ini_file_path[MAX_PATH];
 bool _enable_color_code_highlight = false;
 
+bool _is_color_picker_shown = false;
+
 
 ColorPicker* _pColorPicker;
 HINSTANCE _instance;
@@ -217,6 +219,14 @@ HWND GetScintilla() {
 // COLOR PALETTE POPUP
 ////////////////////////////////////////////////////////////////////////////////
 
+void CreateColorPicker(){
+
+	_pColorPicker = new ColorPicker();
+	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
+	::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
+
+}
+
 bool ShowColorPicker(){
 
 	HWND h_scintilla = GetScintilla();
@@ -239,11 +249,8 @@ bool ShowColorPicker(){
 	// passed -
 
 	// create the color picker if not created
-	if (!_pColorPicker) {
-		_pColorPicker = new ColorPicker();
-		_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
-		::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
-	}
+	if (!_pColorPicker)
+		CreateColorPicker();
 
 	// get hex text - scintilla only accept char
 	char hex_str[10];
@@ -293,6 +300,20 @@ void HideColorPicker() {
 		return;
 
 	_pColorPicker->Show(false);
+
+}
+
+
+void ToggleColorPicker(){
+
+	if (!_pColorPicker)
+		CreateColorPicker();
+
+	if (!_pColorPicker->IsVisible()) {
+		ShowColorPicker();
+	} else {
+		HideColorPicker();
+	}
 
 }
 

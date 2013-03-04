@@ -47,8 +47,6 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 }
 
 
-bool _is_color_picker_shown = false;
-
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 
 	switch (notifyCode->nmhdr.code) {
@@ -61,19 +59,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 				HighlightColorCode();
 			}
 			if (notifyCode->updated & SC_UPDATE_SELECTION ) {
-				if (!_is_color_picker_shown ){
-					_is_color_picker_shown = ShowColorPicker();
-				}else{
-					HideColorPicker();
-					_is_color_picker_shown = false;
-				}
+				ToggleColorPicker();
 			}
 			break;
 		}
 		case SCN_ZOOM:
 		case SCN_SCROLLED: {
 			HideColorPicker();
-			_is_color_picker_shown = false;
 			break;
 		}
 		case SCN_MODIFIED: {
@@ -81,7 +73,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 				|| notifyCode->modificationType & SC_MOD_INSERTTEXT) {
                 HighlightColorCode();
 				HideColorPicker();
-				_is_color_picker_shown = false;
             }
             break;
 		}		
@@ -89,7 +80,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 		case NPPN_BUFFERACTIVATED: {
             HighlightColorCode();
 			HideColorPicker();
-			_is_color_picker_shown = false;
             break;
 		}
 		default: {
