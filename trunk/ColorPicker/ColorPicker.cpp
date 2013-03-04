@@ -228,8 +228,10 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		}
 		case WM_SCREEN_PICK_COLOR:
 		{
+			COLORREF color = (COLORREF)lparam;
+			PutRecentColor(color);
 			::SetActiveWindow(_color_popup);
-			::SendMessage(_message_window, WM_PICKUP_COLOR, lparam, 0);
+			::SendMessage(_message_window, WM_PICKUP_COLOR, color, 0);
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -445,7 +447,6 @@ void ColorPicker::OnSelectColor(LPARAM lparam){
 	_current_color = color;
 
 	PutRecentColor(color);
-	FillRecentColorData();
 
 	::SendMessage(_message_window, WM_PICKUP_COLOR, _current_color, 0);
 
@@ -494,6 +495,7 @@ void ColorPicker::ShowColorChooser(){
 	_is_color_chooser_shown = true;
 
 	if (ChooseColor(&cc)==TRUE) {
+		PutRecentColor(cc.rgbResult);
 		::SendMessage(_message_window, WM_PICKUP_COLOR, cc.rgbResult, 0);
 	} else {
 		::SendMessage(_message_window, WM_PICKUP_CANCEL, 0, 0);
@@ -617,6 +619,8 @@ void ColorPicker::PutRecentColor(COLORREF color){
 
 	// put our color first
 	_recent_color_data[0] = color;
+
+	FillRecentColorData();
 
 }
 
