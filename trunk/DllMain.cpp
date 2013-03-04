@@ -50,11 +50,13 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 
 	switch (notifyCode->nmhdr.code) {
-		case NPPN_SHUTDOWN: {
+		case NPPN_SHUTDOWN:
+		{
 			commandMenuCleanUp();
 			break;
 		}
-		case SCN_UPDATEUI: {
+		case SCN_UPDATEUI:
+		{
 			if (notifyCode->updated & SC_UPDATE_V_SCROLL) {
 				HighlightColorCode();
 			}
@@ -64,11 +66,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 			break;
 		}
 		case SCN_ZOOM:
-		case SCN_SCROLLED: {
+		case SCN_SCROLLED:
+		{
 			HideColorPicker();
 			break;
 		}
-		case SCN_MODIFIED: {
+		case SCN_MODIFIED:
+		{
 			if (notifyCode->modificationType & SC_MOD_DELETETEXT
 				|| notifyCode->modificationType & SC_MOD_INSERTTEXT) {
                 HighlightColorCode();
@@ -77,12 +81,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
             break;
 		}		
 		case NPPN_LANGCHANGED:
-		case NPPN_BUFFERACTIVATED: {
+		case NPPN_BUFFERACTIVATED:
+		{
             HighlightColorCode();
 			HideColorPicker();
             break;
 		}
-		default: {
+		default:
+		{
 			// nothing
 		}
 	}

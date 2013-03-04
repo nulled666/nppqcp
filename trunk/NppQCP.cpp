@@ -63,6 +63,8 @@ void PluginCleanUp() {
 		::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
 	}
 
+	DestroyMessageWindow();
+
 }
 
 //
@@ -161,9 +163,9 @@ void CreateMessageWindow() {
 	WNDCLASSEX wc    = {0};
 	wc.cbSize        = sizeof(wc);
 	wc.lpfnWndProc   = MessageWindowWINPROC;
-	wc.cbClsExtra     = 0;
-    wc.cbWndExtra     = 0;
-    wc.hInstance      = _instance;
+	wc.cbClsExtra    = 0;
+    wc.cbWndExtra    = 0;
+    wc.hInstance     = _instance;
 	wc.lpszClassName = szWindowClass;
 
 	if (!RegisterClassEx(&wc)) {
@@ -175,6 +177,13 @@ void CreateMessageWindow() {
 	if (!_message_window) {
 		throw std::runtime_error("NppQCP: CreateWindowEx() function returns null");
 	}
+
+}
+
+void DestroyMessageWindow() {
+
+	::DestroyWindow(_message_window);
+	::UnregisterClass(L"npp_qcp_msgwin", _instance);
 
 }
 
@@ -223,6 +232,7 @@ void CreateColorPicker(){
 
 	_pColorPicker = new ColorPicker();
 	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
+
 	::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
 
 }
@@ -330,6 +340,8 @@ void WriteColorCodeToEditor(COLORREF color) {
 		
 	HWND current_scintilla = GetScintilla();
 	::SendMessage(current_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
+
+	::SetActiveWindow(current_scintilla);
 
 }
 
