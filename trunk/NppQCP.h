@@ -37,6 +37,9 @@ void HideColorPicker();
 void ToggleColorPicker();
 void WriteColorCodeToEditor(COLORREF color);
 
+void LoadRecentColor();
+void SaveRecentColor();
+
 bool is_hex(char* str);
 bool pad_hex(char* out, const char* in);
 

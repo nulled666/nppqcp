@@ -242,7 +242,9 @@ void CreateColorPicker(){
 
 	_pColorPicker = new ColorPicker();
 	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
-	
+
+	LoadRecentColor();
+
 	::SetActiveWindow(nppData._nppHandle);
 
 }
@@ -355,6 +357,46 @@ void WriteColorCodeToEditor(COLORREF color) {
 	::SendMessage(current_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
 
 	::SetActiveWindow(current_scintilla);
+
+	SaveRecentColor();
+
+}
+
+// load & save recent used colors
+void LoadRecentColor(){
+
+	if (!_pColorPicker)
+		return;
+
+	COLORREF colors[10];
+	int color;
+	wchar_t key[20];
+
+	for (int i=0; i<10; i++) {
+		wsprintf(key, L"recent%d", i);
+		colors[i] = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
+	}
+
+	_pColorPicker->SetRecentColor(colors);
+}
+
+void SaveRecentColor(){
+	
+	if(!_pColorPicker)
+		return;
+
+	COLORREF colors[10];
+	COLORREF* p_colors = colors;
+	_pColorPicker->GetRecentColor(p_colors);
+
+	wchar_t color[10];
+	wchar_t key[20];
+
+	for (int i=0; i<10; i++) {
+		wsprintf(color, L"%d", colors[i]);
+		wsprintf(key, L"recent%d", i);
+		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
+	}
 
 }
 
