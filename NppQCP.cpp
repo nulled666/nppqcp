@@ -74,7 +74,9 @@ void LoadConfig(){
 	PathAppend(_ini_file_path, _ini_file);
 
 	// read in config
-	int enabled = ::GetPrivateProfileInt(_ini_section, _ini_key, 1, _ini_file_path);
+	int enabled = ::GetPrivateProfileInt(_ini_section, _ini_key, 5, _ini_file_path);
+	if(enabled == 5)
+		enabled = 1;
 	_enable_qcp = ( enabled == 1);
 
 }
