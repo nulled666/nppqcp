@@ -147,7 +147,7 @@ void ScreenPicker::SampleColor(LPARAM lparam){
 
 	::SendMessage(_parent_window, WM_SCREEN_HOVER_COLOR, 0, (LPARAM)_current_color);
 
-	::SetWindowPos(_info_window, HWND_TOP, x+10, y-130, 120, 120, SWP_SHOWWINDOW);
+	::SetWindowPos(_info_window, HWND_TOP, x+20, y-140, 120, 120, SWP_SHOWWINDOW);
 
 }
 
@@ -203,6 +203,7 @@ BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 
 void ScreenPicker::PrepareInfoWindow(){
 
-	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 120, 120, SWP_SHOWWINDOW);
+	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 120, 120, SWP_HIDEWINDOW);
+	::SetWindowLong(_info_window, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
 
 }
