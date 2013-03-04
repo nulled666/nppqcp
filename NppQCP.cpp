@@ -12,9 +12,9 @@
 #include "ColorPicker\ColorPicker.res.h"
 
 
-const wchar_t kIniSection[] = L"nppqcp";
-const wchar_t kIniKey[] = L"enabled";
-const wchar_t kConfigFileName[] = L"nppqcp.ini";
+const wchar_t _ini_section[] = L"nppqcp";
+const wchar_t _ini_key[] = L"enabled";
+const wchar_t _ini_file[] = L"nppqcp.ini";
 
 
 //
@@ -46,6 +46,8 @@ void PluginInit(HANDLE module) {
 
 	CreateMessageWindow();
 
+	LoadConfig();
+
 }
 
 //
@@ -53,24 +55,18 @@ void PluginInit(HANDLE module) {
 //
 void PluginCleanUp() {
 
-	::WritePrivateProfileString(
-		kIniSection, kIniKey,
-		_enable_color_code_highlight ? L"1" : L"0",
-		_ini_file_path
-	);
-
-	if (_pColorPicker) {
-		::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
-	}
+	SaveConfig();
 
 	DestroyMessageWindow();
 
 }
 
-//
-// Initialization of your plugin commands
-// You should fill your plugins commands here
-void InitCommandMenu() {
+
+
+////////////////////////////////////////
+// Access config file
+////////////////////////////////////////
+void LoadConfig(){
 
 	// get path of plugin configuration
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)_ini_file_path);
@@ -81,11 +77,28 @@ void InitCommandMenu() {
 	}
 
 	// make your plugin config file full file path name
-	PathAppend(_ini_file_path, kConfigFileName);
+	PathAppend(_ini_file_path, _ini_file);
 
 	// get the parameter value from plugin config
-	_enable_color_code_highlight = (::GetPrivateProfileInt(kIniSection, kIniKey, 0, _ini_file_path) != 0);
+	_enable_color_code_highlight = (::GetPrivateProfileInt(_ini_section, _ini_key, 0, _ini_file_path) != 0);
 
+}
+
+void SaveConfig(){
+
+	::WritePrivateProfileString(
+		_ini_section, _ini_key,
+		_enable_color_code_highlight ? L"1" : L"0",
+		_ini_file_path
+	);
+
+}
+
+
+//
+// Initialization of your plugin commands
+// You should fill your plugins commands here
+void InitCommandMenu() {
 
     //--------------------------------------------//
     //-- STEP 3. CUSTOMIZE YOUR PLUGIN COMMANDS --//
@@ -98,13 +111,13 @@ void InitCommandMenu() {
     //            bool check0nInit                // optional. Make this menu item be checked visually
     //            );
 
+	setCommand(0, L"Highlight Color Code", ToggleColorCodeHighlight, NULL, _enable_color_code_highlight);
+	setCommand(1, L"---", NULL, NULL, false);
+
 	wchar_t text[200] = L"Visit Website ";
 	wcscat(text, L" (Version ");
 	wcscat(text, NPP_PLUGIN_VER);
 	wcscat(text, L")");
-
-	setCommand(0, L"Highlight Color Code for this File Type", ToggleColorCodeHighlight, NULL, _enable_color_code_highlight);
-	setCommand(1, L"---", NULL, NULL, false);
 	setCommand(2, text, VisitWebsite, NULL, FALSE);
 
 }
@@ -135,6 +148,7 @@ bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKe
 void commandMenuCleanUp() {
 }
 
+
 //----------------------------------------------//
 //-- STEP 4. DEFINE YOUR ASSOCIATED FUNCTIONS --//
 //----------------------------------------------//
@@ -151,7 +165,7 @@ void ToggleColorCodeHighlight() {
 void VisitWebsite() {
 
 	wchar_t url[200] = L"http://www.github.com";
-	ShellExecute(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
+	::ShellExecute(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
 
 }
 
@@ -192,9 +206,7 @@ LRESULT CALLBACK MessageWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LP
 
 	switch (message) {
 		case WM_PICKUP_COLOR: {
-			//HideColorPicker();
-			COLORREF color = (COLORREF)wparam;
-			WriteColorCodeToEditor(color);
+			WriteColorCodeToEditor((COLORREF)wparam);
 			break;
 		}
 		default: {
@@ -232,8 +244,8 @@ void CreateColorPicker(){
 
 	_pColorPicker = new ColorPicker();
 	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
-
-	::SendMessage(nppData._nppHandle, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_pColorPicker->GetWindow());
+	
+	::SetActiveWindow(nppData._nppHandle);
 
 }
 

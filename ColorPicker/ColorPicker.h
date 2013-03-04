@@ -84,6 +84,7 @@ class ColorPicker {
 		void SetRecentColor(const COLORREF *color[]);
 		void GetRecentColor(COLORREF *color[]);
 
+
 	protected:
 
 		HINSTANCE _instance;
