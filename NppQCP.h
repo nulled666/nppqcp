@@ -7,7 +7,7 @@
 const TCHAR NPP_PLUGIN_NAME[] = TEXT("Quick Color Picker +");
 const TCHAR NPP_PLUGIN_VER[] = TEXT("1.0");
 
-const int kCommandCount = 3;
+const int _command_count = 3;
 
 void PluginInit(HANDLE module);
 void PluginCleanUp();
@@ -22,7 +22,7 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 
 
 ////////////////////////////////////////////
-void ToggleColorCodeHighlight();
+void ToggleQCP();
 void VisitWebsite();
 
 HWND GetScintilla();

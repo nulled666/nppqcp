@@ -5,7 +5,7 @@
 #include "NppQCP.h"
 
 
-extern FuncItem funcItem[kCommandCount];
+extern FuncItem funcItem[_command_count];
 extern NppData nppData;
 extern bool doCloseTag;
 
@@ -19,6 +19,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
         PluginInit(hModule);
         break;
       case DLL_PROCESS_DETACH:
+		SaveConfig();
         PluginCleanUp();
         break;
       case DLL_THREAD_ATTACH:
@@ -34,6 +35,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData) {
 	nppData = notpadPlusData;
+	LoadConfig();
 	InitCommandMenu();
 }
 
@@ -42,7 +44,7 @@ extern "C" __declspec(dllexport) const TCHAR * getName() {
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
-	*nbF = kCommandCount;
+	*nbF = _command_count;
 	return funcItem;
 }
 

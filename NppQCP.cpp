@@ -21,12 +21,12 @@ const wchar_t _ini_file[] = L"nppqcp.ini";
 // The data of Notepad++ that you can use in your plugin commands
 // extern variables - don't change the name
 NppData nppData;
-FuncItem funcItem[kCommandCount];
+FuncItem funcItem[_command_count];
 bool doCloseTag;
 
 
-wchar_t _ini_file_path[MAX_PATH];
-bool _enable_color_code_highlight = false;
+TCHAR _ini_file_path[MAX_PATH];
+bool _enable_qcp = false;
 
 bool _is_color_picker_shown = false;
 
@@ -46,16 +46,12 @@ void PluginInit(HANDLE module) {
 
 	CreateMessageWindow();
 
-	LoadConfig();
-
 }
 
 //
 // Here you can do the clean up, save the parameters (if any) for the next session
 //
 void PluginCleanUp() {
-
-	SaveConfig();
 
 	DestroyMessageWindow();
 
@@ -71,16 +67,15 @@ void LoadConfig(){
 	// get path of plugin configuration
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)_ini_file_path);
 
-	// if config path doesn't exist, we create it
 	if (PathFileExists(_ini_file_path) == FALSE) {
 		::CreateDirectory(_ini_file_path, NULL);
 	}
 
-	// make your plugin config file full file path name
 	PathAppend(_ini_file_path, _ini_file);
 
-	// get the parameter value from plugin config
-	_enable_color_code_highlight = (::GetPrivateProfileInt(_ini_section, _ini_key, 0, _ini_file_path) != 0);
+	// read in config
+	int enabled = ::GetPrivateProfileInt(_ini_section, _ini_key, 1, _ini_file_path);
+	_enable_qcp = ( enabled == 1);
 
 }
 
@@ -88,30 +83,27 @@ void SaveConfig(){
 
 	::WritePrivateProfileString(
 		_ini_section, _ini_key,
-		_enable_color_code_highlight ? L"1" : L"0",
+		_enable_qcp ? L"1" : L"0",
 		_ini_file_path
 	);
 
 }
 
 
-//
-// Initialization of your plugin commands
-// You should fill your plugins commands here
+////////////////////////////////////////
+// Menu Command
+////////////////////////////////////////
 void InitCommandMenu() {
 
-    //--------------------------------------------//
-    //-- STEP 3. CUSTOMIZE YOUR PLUGIN COMMANDS --//
-    //--------------------------------------------//
-    // with function :
     // setCommand(int index,                      // zero based number to indicate the order of command
     //            wchar_t *commandName,             // the command name that you want to see in plugin menu
     //            PFUNCPLUGINCMD functionPointer, // the symbol of function (function pointer) associated with this command. The body should be defined below. See Step 4.
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
-    //            bool check0nInit                // optional. Make this menu item be checked visually
+    //            bool checkOnInit                // optional. Make this menu item be checked visually
     //            );
 
-	setCommand(0, L"Highlight Color Code", ToggleColorCodeHighlight, NULL, _enable_color_code_highlight);
+	setCommand(0, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
+
 	setCommand(1, L"---", NULL, NULL, false);
 
 	wchar_t text[200] = L"Visit Website ";
@@ -122,12 +114,9 @@ void InitCommandMenu() {
 
 }
 
-
-//
-// This function help you to initialize your plugin commands
-//
 bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey *sk, bool checkOnInit) {
-    if (index >= kCommandCount)
+
+    if (index >= _command_count)
         return false;
 
     if (!pFunc)
@@ -141,33 +130,43 @@ bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKe
     return true;
 }
 
-
-//
-// Here you can do the clean up (especially for the shortcut)
-//
 void commandMenuCleanUp() {
+
 }
 
 
-//----------------------------------------------//
-//-- STEP 4. DEFINE YOUR ASSOCIATED FUNCTIONS --//
-//----------------------------------------------//
+///////////////////////////////////////////////////////////
+// MENU COMMANDS
+///////////////////////////////////////////////////////////
 
-// toggle color code highlight
-void ToggleColorCodeHighlight() {
+// toggle QCP plugins
+void ToggleQCP() {
 
-	_enable_color_code_highlight = !_enable_color_code_highlight;
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[0]._cmdID, MF_BYCOMMAND | (_enable_color_code_highlight?MF_CHECKED:MF_UNCHECKED));
+	_enable_qcp = !_enable_qcp;
+	
+	if (_enable_qcp) {
+		HighlightColorCode();
+	} else {
+		RemoveColorHighlight();
+		HideColorPicker();
+	}
+
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[0]._cmdID, MF_BYCOMMAND | (_enable_qcp ? MF_CHECKED : MF_UNCHECKED));
 
 }
 
 // visit nppqcp website
 void VisitWebsite() {
 
-	wchar_t url[200] = L"http://www.github.com";
+	wchar_t url[200] = L"http://code.google.com/p/nppqcp/";
 	::ShellExecute(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
 
 }
+
+
+///////////////////////////////////////////////////////////
+//  MESSAGE WINDOW
+///////////////////////////////////////////////////////////
 
 // create a background window for message communication
 void CreateMessageWindow() {
@@ -235,7 +234,6 @@ HWND GetScintilla() {
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // COLOR PALETTE POPUP
 ////////////////////////////////////////////////////////////////////////////////
@@ -250,6 +248,9 @@ void CreateColorPicker(){
 }
 
 bool ShowColorPicker(){
+
+	if (!_enable_qcp)
+		return false;
 
 	HWND h_scintilla = GetScintilla();
 
@@ -403,14 +404,17 @@ COLORREF hex2color(char* str) {
 ////////////////////////////////////////////////////////////////////////////////
 void HighlightColorCode() {
 
+	if(!_enable_qcp)
+		return;
+
 	int lang = -100;
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTLANGTYPE, 0, (LPARAM)&lang);
-    
-    RemoveColorHighlight();
 
     if (lang != L_CSS) {
         return;
     }
+    
+    RemoveColorHighlight();
 
     HWND h_scintilla = GetScintilla();
 
