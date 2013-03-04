@@ -9,13 +9,15 @@ class ScreenPicker
 public:
 	
 	ScreenPicker();
-	~ScreenPicker() {};
+	~ScreenPicker();
 
 	void Create(HINSTANCE inst, HWND parent);
 	bool IsCreated() {
 		return (_mask_window != NULL);
 	}
 	
+	void Color(COLORREF color);
+
 	void Start();
 	void End();
 	
@@ -28,15 +30,21 @@ private:
 	HWND _info_window;
 
 	HWND _zoom_area;
-	HWND _color_hex;
-	HWND _color_rgb;
+
+	HBRUSH _hbrush_old;
+	HBRUSH _hbrush_new;
+	HBRUSH _hbrush_bg;
 
 	HCURSOR _cursor;
-	COLORREF _current_color;
+
+	COLORREF _old_color;
+	COLORREF _new_color;
 
 	void CreateMaskWindow();
 	static LRESULT CALLBACK MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 	BOOL CALLBACK MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);
+
+	LRESULT OnCtlColorStatic(LPARAM lparam);
 
 	void CreateInfoWindow();
 	static BOOL CALLBACK InfoWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);

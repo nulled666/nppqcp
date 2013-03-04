@@ -481,6 +481,7 @@ void ColorPicker::StartPickScreenColor(){
 		_pScreenPicker->Create(_instance, _color_popup);
 	}
 
+	_pScreenPicker->Color(_current_color);
 	_pScreenPicker->Start();
 
 }
