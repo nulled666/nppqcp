@@ -79,8 +79,10 @@ HWND GetScintilla();
 void CreateMessageWindow();
 LRESULT CALLBACK MessageWindowWINPROC(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+void CreateColorPicker();
 bool ShowColorPicker();
 void HideColorPicker();
+void ToggleColorPicker();
 void WriteColorCodeToEditor(COLORREF color);
 
 bool is_hex(char* str);
