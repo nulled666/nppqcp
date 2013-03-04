@@ -451,7 +451,7 @@ void HighlightColorCode() {
 	int lang = -100;
     ::SendMessage(nppData._nppHandle, NPPM_GETCURRENTLANGTYPE, 0, (LPARAM)&lang);
 
-    if (lang != L_CSS) {
+	if (lang != L_CSS && lang != L_JS && lang != L_HTML) {
         return;
     }
     
