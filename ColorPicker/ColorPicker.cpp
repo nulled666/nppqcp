@@ -142,6 +142,26 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 
 }
 
+void ColorPicker::SetRecentColor(const COLORREF *colors){
+
+	for (int i=0; i<10; i++) {
+		if(colors[i]>0xffffff || colors[i]<0)
+			continue;
+		_recent_color_data[i] = colors[i];
+	}
+
+	FillRecentColorData();
+
+}
+
+void ColorPicker::GetRecentColor(COLORREF *&colors){
+
+	for (int i=0; i<10; i++) {
+		colors[i] = _recent_color_data[i];
+	}
+
+}
+
 // alter the parent rect to move the color popup
 void ColorPicker::SetParentRect(RECT rc) {
 
