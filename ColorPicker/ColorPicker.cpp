@@ -294,7 +294,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 // WM_INITDIALOG
 void ColorPicker::OnInitDialog(){
 
-
 	// dialog control ui stuff
 	_pick_cursor = ::LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
 	HICON hIcon = (HICON)::LoadImage(_instance, MAKEINTRESOURCE(IDI_PICKER), IMAGE_ICON, 16, 16, 0);
@@ -372,10 +371,11 @@ void ColorPicker::DrawColorPalette(){
 
 	}
 
+	::ReleaseDC(_color_popup, hdc);
+
+	// mark current color
 	if (_old_color_row!=-1 && _old_color_index!=-1)
 		DrawColorHoverBox(_old_color_row, _old_color_index, true);
-
-	::ReleaseDC(_color_popup, hdc);
 
 }
 
