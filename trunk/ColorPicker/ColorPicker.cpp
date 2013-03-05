@@ -28,6 +28,8 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_current_color = color;
 	_new_color = 0;
 	
+	_is_inside_palette = false;
+
 	_old_color_row = -1;
 	_old_color_index = -1;
 
@@ -226,6 +228,14 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 			OnInitDialog();
 			return TRUE;
 		}
+		case WM_SETCURSOR:
+		{
+			if (_is_inside_palette) {
+				::SetCursor(_pick_cursor);
+				return TRUE;
+			}
+			return FALSE;
+		}
 		case WM_MOUSEMOVE:
 		{
 			return OnMouseMove(lparam);
@@ -365,7 +375,8 @@ void ColorPicker::DrawColorPalette(){
 
 	}
 
-	DrawColorHoverBox(_old_color_row, _old_color_index, true);
+	if (_old_color_row!=-1 && _old_color_index!=-1)
+		DrawColorHoverBox(_old_color_row, _old_color_index, true);
 
 	::ReleaseDC(_color_popup, hdc);
 
@@ -382,7 +393,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 		
 		// inside palette area
 
-		::SetCursor(_pick_cursor);
+		_is_inside_palette = true;
 
 		int index = round((p.x-_rect_palette.left)/12);
 		int row = round((p.y-_rect_palette.top)/12);
@@ -415,6 +426,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 	} else {
 		
 		// outside palette
+		_is_inside_palette = false;
 
 		if (_previous_row != -1) {
 			if (_previous_row!=_old_color_row && _previous_index!=_old_color_index) {
