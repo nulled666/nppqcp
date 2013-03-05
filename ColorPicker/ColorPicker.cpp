@@ -16,7 +16,7 @@
 
 #define SWATCH_BG_COLOR 0x666666
 
-ColorPicker::ColorPicker() {
+ColorPicker::ColorPicker(COLORREF color) {
 	
 	_instance = NULL;
 	_parent_window = NULL;
@@ -28,8 +28,8 @@ ColorPicker::ColorPicker() {
 	_pick_cursor = NULL;
 
 	_current_color_found_in_palette = false;
-	_current_color = 0x000000;
-	_new_color = 0x000000;
+	_current_color = color;
+	_new_color = 0;
 
 	_color_palette_data[14][21] = NULL;
 	_recent_color_data[10] = NULL;
@@ -48,6 +48,19 @@ ColorPicker::ColorPicker() {
 	_is_color_chooser_shown = false;
 
 	_pScreenPicker = NULL;
+
+}
+
+ColorPicker::~ColorPicker() {
+
+	::RemoveProp(_color_palette, L"parent");
+
+	::DestroyWindow(_color_popup);
+
+	::DeleteObject(_hbrush_popup_bg);
+	::DeleteObject(_hbrush_swatch_current);
+	::DeleteObject(_hbrush_swatch_new);
+	::DeleteObject(_hbrush_swatch_bg);
 
 }
 
@@ -77,18 +90,6 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 	
 }
 
-void ColorPicker::Destroy() {
-
-	::RemoveProp(_color_palette, L"parent");
-
-	::DestroyWindow(_color_popup);
-
-	::DeleteObject(_hbrush_popup_bg);
-	::DeleteObject(_hbrush_swatch_current);
-	::DeleteObject(_hbrush_swatch_new);
-	::DeleteObject(_hbrush_swatch_bg);
-
-}
 
 void ColorPicker::Color(COLORREF color, bool is_rgb) {
 	

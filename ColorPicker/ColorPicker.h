@@ -36,8 +36,8 @@ class ColorPicker {
 
 	public:
 
-		ColorPicker();
-		~ColorPicker() {};
+		ColorPicker(COLORREF color = 0);
+		~ColorPicker();
 
 		void Create(HINSTANCE instance, HWND parent, HWND message_window = NULL);
 		void Destroy();

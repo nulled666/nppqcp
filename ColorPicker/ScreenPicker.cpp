@@ -21,9 +21,14 @@ ScreenPicker::ScreenPicker(COLORREF color){
 	_old_color = color;
 	_new_color = 0;
 
-	_hbrush_old = NULL;
-	_hbrush_new = NULL;
-	_hbrush_bg = NULL;
+}
+
+ScreenPicker::~ScreenPicker(){
+
+	::DestroyWindow(_mask_window);
+	::DestroyWindow(_info_window);
+
+	::UnregisterClass(MASK_WIN_CLASS, _instance);
 
 }
 
