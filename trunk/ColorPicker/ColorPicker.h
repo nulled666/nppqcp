@@ -114,6 +114,7 @@ class ColorPicker {
 		int _previous_row;
 		int _previous_index;
 
+		bool _is_first_create;
 		bool _is_color_chooser_shown;
 		
 		// main popup
