@@ -7,7 +7,7 @@ USAGE:
 		pColorPicker->Create(hInstance, hwndParent);
 		pColorPicker->Color(RGB(255,0,128));
 		pColorPicker->SetParentRect(rc);
-		pColorPicker->Show(true);
+		pColorPicker->Show();
 
 	messages:
 		WM_QCP_PICK
@@ -63,9 +63,8 @@ class ColorPicker {
 
 		void SetParentRect(RECT rc);
 
-		void Show(bool show = true) const {
-			::ShowWindow(_color_popup, show ? SW_SHOW : SW_HIDE);
-		};
+		void Show();
+		void Hide();
 
 		bool IsVisible() const {
 			return ( ::IsWindowVisible(_color_popup) ? true : false );
@@ -108,14 +107,6 @@ class ColorPicker {
 		HWND _color_palette;
 		WNDPROC _default_color_palette_winproc;
 
-		HWND _color_swatch_current;
-		HWND _color_swatch_new;
-
-		HBRUSH _hbrush_popup_bg;
-		HBRUSH _hbrush_swatch_current;
-		HBRUSH _hbrush_swatch_new;
-		HBRUSH _hbrush_swatch_bg;
-
 		bool _is_color_chooser_shown;
 		
 		// main popup
@@ -147,6 +138,7 @@ class ColorPicker {
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 		void DisplayNewColor(COLORREF color);
+		void PaintColorSwatches();
 
 		int round(double number);
 
