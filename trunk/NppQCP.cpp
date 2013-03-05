@@ -320,7 +320,7 @@ bool ShowColorPicker(){
 	_pColorPicker->SetParentRect(rc);
 
 	// set and show
-	_pColorPicker->Show(true);
+	_pColorPicker->Show();
 
 	// set the focus back to editor - don't break the keyboard action chain
 	::SetActiveWindow(nppData._nppHandle);
@@ -336,7 +336,7 @@ void HideColorPicker() {
 	if (!_pColorPicker || !_pColorPicker->IsVisible())
 		return;
 
-	_pColorPicker->Show(false);
+	_pColorPicker->Hide();
 
 }
 

@@ -10,10 +10,8 @@
 #include <windowsx.h>
 
 
-#define BG_COLOR 0xEEEEEE
 #define POPUP_WIDTH 266
 #define POPUP_HEIGHT 220
-
 #define SWATCH_BG_COLOR 0x666666
 
 ColorPicker::ColorPicker(COLORREF color) {
@@ -37,14 +35,6 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_color_palette = NULL;
 	_default_color_palette_winproc = NULL;
 
-	_color_swatch_current = NULL;
-	_color_swatch_new = NULL;
-
-	_hbrush_popup_bg = NULL;
-	_hbrush_swatch_current = NULL;
-	_hbrush_swatch_new = NULL;
-	_hbrush_swatch_bg = NULL;
-
 	_is_color_chooser_shown = false;
 
 	_pScreenPicker = NULL;
@@ -56,11 +46,6 @@ ColorPicker::~ColorPicker() {
 	::RemoveProp(_color_palette, L"parent");
 
 	::DestroyWindow(_color_popup);
-
-	::DeleteObject(_hbrush_popup_bg);
-	::DeleteObject(_hbrush_swatch_current);
-	::DeleteObject(_hbrush_swatch_new);
-	::DeleteObject(_hbrush_swatch_bg);
 
 }
 
@@ -189,6 +174,19 @@ void ColorPicker::SetParentRect(RECT rc) {
 
 }
 
+void ColorPicker::Show() {
+
+	PaintColorSwatches();
+	::ShowWindow(_color_popup, SW_SHOW);
+
+}
+
+void ColorPicker::Hide() {
+
+	::ShowWindow(_color_popup, SW_HIDE);
+
+}
+
 BOOL CALLBACK ColorPicker::ColorPopupWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
@@ -225,18 +223,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		{
 			OnInitDialog();
 			return TRUE;
-		}
-		case WM_CTLCOLORDLG:
-		case WM_CTLCOLOR:
-		{
-			if (_hbrush_popup_bg == NULL) {
-				_hbrush_popup_bg = CreateSolidBrush(BG_COLOR);
-			}
-            return (LRESULT) _hbrush_popup_bg;
-		}
-		case WM_CTLCOLORSTATIC:
-		{
-			return OnCtlColorStatic(lparam);
 		}
 		case WM_DRAWITEM:
 		{
@@ -303,8 +289,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 void ColorPicker::OnInitDialog(){
 
 	_color_palette = ::GetDlgItem(_color_popup, IDC_COLOR_PALETTE);
-	_color_swatch_current = ::GetDlgItem(_color_popup, IDC_OLD_COLOR);
-	_color_swatch_new = ::GetDlgItem(_color_popup, IDC_NEW_COLOR);
 
 	// dialog control ui stuff
 	_pick_cursor = ::LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
@@ -318,12 +302,6 @@ void ColorPicker::OnInitDialog(){
 
 	ctrl = ::GetDlgItem(_color_popup, ID_MORE);
 	::MoveWindow(ctrl, 43, 184, 32, 28, false);
-
-	ctrl = ::GetDlgItem(_color_popup, IDC_COLOR_BG);
-	::MoveWindow(ctrl, 208, 186, 50, 24, false);
-
-	::MoveWindow(_color_swatch_current, 233, 187, 24, 22, false);
-	::MoveWindow(_color_swatch_new, 209, 187, 24, 22, false);
 
 	ctrl = ::GetDlgItem(_color_popup, IDC_COLOR_TEXT);
 	::MoveWindow(ctrl, 100, 191, 80, 20, false);
@@ -349,43 +327,6 @@ void ColorPicker::OnInitDialog(){
 
 }
 
-
-// WM_ONCTLCOLORSTATIC
-LRESULT ColorPicker::OnCtlColorStatic(LPARAM lparam) {
-
-	DWORD ctrl_id = ::GetDlgCtrlID((HWND)lparam);
-
-	switch (ctrl_id) {
-		case IDC_OLD_COLOR:
-		{
-			if(_hbrush_swatch_current != NULL) {
-				::DeleteObject(_hbrush_swatch_current);
-			}
-			_hbrush_swatch_current = CreateSolidBrush(_current_color);
-			return (LRESULT)_hbrush_swatch_current;
-		}
-		case IDC_NEW_COLOR:
-		{
-			if(_hbrush_swatch_new != NULL) {
-				::DeleteObject(_hbrush_swatch_new);
-			}
-			_hbrush_swatch_new = CreateSolidBrush(_new_color);
-			return (LRESULT)_hbrush_swatch_new;
-		}
-		case IDC_COLOR_BG:
-		{
-			if (_hbrush_swatch_bg == NULL) {
-				_hbrush_swatch_bg = CreateSolidBrush(SWATCH_BG_COLOR);
-			}
-			return (LRESULT)_hbrush_swatch_bg;
-		}
-		default:
-		{
-			return FALSE;
-		}
-	}
-
-}
 
 // WM_DRAWENTIRE
 BOOL ColorPicker::OnDrawItem(LPARAM lParam){
@@ -523,7 +464,8 @@ void ColorPicker::ShowColorChooser(){
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT | CC_ENABLEHOOK;
 	cc.lpfnHook = (LPCCHOOKPROC)ColorChooserWINPROC;
 
-	Show(false);
+	Hide();
+
 	_is_color_chooser_shown = true;
 
 	if (ChooseColor(&cc)==TRUE) {
@@ -558,8 +500,6 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 
 	_new_color = color;
 
-	// update swatch color - lazy solution
-	::SetDlgItemText(_color_popup, IDC_NEW_COLOR, L"");
 
 	// transform order for hex display
 	color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
@@ -568,6 +508,45 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 	wsprintf(hex, L"#%06X", color);
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, hex);
 
+	PaintColorSwatches();
+
+}
+
+void ColorPicker::PaintColorSwatches() {
+	
+	// paint swatch /////////
+	HDC hdc_win = ::GetDC(_color_popup);
+	RECT rc;
+	HBRUSH brush;
+	
+	// frame
+	rc.left = 208;
+	rc.top = 186;
+	rc.right = 208+50;
+	rc.bottom = 186+24;
+	brush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+	
+	// new color
+	rc.left = 209;
+	rc.top = 187;
+	rc.right = 209+24;
+	rc.bottom = 187+22;
+	brush = ::CreateSolidBrush(_new_color);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	// old color
+	rc.left = 233;
+	rc.top = 187;
+	rc.right = 233+24;
+	rc.bottom = 187+22;
+	brush = ::CreateSolidBrush(_current_color);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	::ReleaseDC(_color_popup, hdc_win);
 }
 
 

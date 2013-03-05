@@ -197,15 +197,17 @@ void ScreenPicker::SampleColor(int x, int y){
 	wsprintf(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_RGB, color_rgb);
 
-	// paint preview
+	// paint preview /////////////
 	HDC hdc_win = ::GetDC(_info_window);
 	RECT rc;
 	HBRUSH brush;
 	
+	// zoomed preview
 	HDC hdc_desktop = ::GetDC(HWND_DESKTOP);
 	::StretchBlt(hdc_win, 5, 5, 87, 87, hdc_desktop, x-4, y-4, 9, 9, SRCCOPY);
 	::ReleaseDC(HWND_DESKTOP, hdc_desktop);
 
+	// frame box
 	rc.left = 5;
 	rc.top = 5;
 	rc.right = 93;
@@ -214,6 +216,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	::FrameRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
+	// center box
 	rc.left = 43;
 	rc.top = 43;
 	rc.right = 54;
@@ -222,7 +225,8 @@ void ScreenPicker::SampleColor(int x, int y){
 	::FrameRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
-	// paint color swatch
+	// paint color swatch /////////////////
+	// bg
 	rc.left = 99;
 	rc.top = 6;
 	rc.right = 172;
@@ -231,6 +235,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
+	// new color
 	rc.left = 100;
 	rc.top = 7;
 	rc.right = 136;
@@ -239,6 +244,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
+	// old color
 	rc.left = 136;
 	rc.top = 7;
 	rc.right = 171;
