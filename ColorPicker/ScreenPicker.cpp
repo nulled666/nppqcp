@@ -16,6 +16,8 @@ ScreenPicker::ScreenPicker(COLORREF color){
 	_parent_window = NULL;
 	_mask_window = NULL;
 
+	_is_shown = false;
+
 	_old_color = color;
 	_new_color = 0;
 
@@ -93,6 +95,10 @@ LRESULT CALLBACK ScreenPicker::MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM
 BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
+		case WM_CREATE:
+		{
+			::RegisterHotKey(_mask_window, 1, 0, VK_ESCAPE);
+		}
 		case WM_MOUSEMOVE:
 		{
 			::SetCursor(_cursor);
@@ -105,6 +111,7 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			::SendMessage(_parent_window, WM_SCREEN_PICK_COLOR, 0, (LPARAM)_new_color);
 			return TRUE;
 		}
+		case WM_HOTKEY:
 		case WM_RBUTTONUP:
 		{
 			End();
@@ -133,13 +140,17 @@ void ScreenPicker::Start(){
 	int height = mi.rcMonitor.bottom - mi.rcMonitor.top;
 
 	::SetWindowPos(_mask_window, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top, width, height, SWP_SHOWWINDOW);
-	::SetActiveWindow(_mask_window);
+
+	_is_shown = true;
+
 }
 
 void ScreenPicker::End(){
 
 	::SetWindowPos(_mask_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW);
 	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 0, 0, SWP_HIDEWINDOW);
+
+	_is_shown = false;
 
 }
 
