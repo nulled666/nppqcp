@@ -208,7 +208,13 @@ LRESULT CALLBACK MessageWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LP
 	switch (message) {
 		case WM_QCP_PICK:
 		{
+			::SetActiveWindow(nppData._nppHandle);
 			WriteColorCodeToEditor((COLORREF)wparam);
+			break;
+		}
+		case WM_QCP_CANCEL:
+		{
+			::SetActiveWindow(nppData._nppHandle);
 			break;
 		}
 		case WM_QCP_START_SCREEN_PICKER:

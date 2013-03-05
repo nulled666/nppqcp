@@ -256,13 +256,6 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 			    	ShowColorChooser();
 					return TRUE;
 				}
-                case IDC_COLOR_PALETTE: {
-			        if (HIWORD(wparam) == LBN_SELCHANGE) {
-                        OnSelectColor(lparam);
-					    return TRUE;
-		            }
-					return FALSE;
-				}
                 default: {
                     return FALSE;
 				}
@@ -483,19 +476,6 @@ bool ColorPicker::PointInRect(const POINT p, const RECT rc) {
 
 }
 
-// WM_COMMAND -> WM_COMMAND -> LBN_SELCHANGE
-void ColorPicker::OnSelectColor(LPARAM lparam){
-
-	int index = ::SendMessage((HWND)lparam, LB_GETCURSEL, 0L, 0L);
-    COLORREF color = ::SendMessage((HWND)lparam, LB_GETITEMDATA, index, 0L);
-	
-	_current_color = color;
-
-	PutRecentColor(color);
-
-	::SendMessage(_message_window, WM_QCP_PICK, _current_color, 0);
-
-}
 
 // WM_COMMAND -> ID_PICK
 // start the screen picker
@@ -519,6 +499,9 @@ void ColorPicker::EndPickScreenColor(){
 	::ShowWindow(_color_popup, SW_SHOW);
 	::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
 	
+	DrawColorPalette();
+	PaintColorSwatches();
+
 }
 
 
