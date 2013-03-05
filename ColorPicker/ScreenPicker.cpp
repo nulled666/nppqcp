@@ -181,7 +181,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	if(win_y < mi.rcMonitor.top)
 		win_y = y+20;
 
-	::SetWindowPos(_info_window, NULL, win_x, win_y, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+	::MoveWindow(_info_window, win_x, win_y, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, false);
 
 	// display color text
 	wchar_t color_hex[10];
@@ -315,10 +315,10 @@ void ScreenPicker::PrepareInfoWindow(){
 	HWND ctrl;
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_RGB);
-	::SetWindowPos(ctrl, NULL, 100, INFO_WINDOW_HEIGHT-38, 80, 16, SWP_NOZORDER);
+	::MoveWindow(ctrl, 100, INFO_WINDOW_HEIGHT-38, 80, 16, false);
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_HEX);
-	::SetWindowPos(ctrl, NULL, 100, INFO_WINDOW_HEIGHT-22, 80, 16, SWP_NOZORDER);
+	::MoveWindow(ctrl, 100, INFO_WINDOW_HEIGHT-22, 80, 16, false);
 
 }
 
