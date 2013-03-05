@@ -8,7 +8,7 @@ class ScreenPicker
 
 public:
 	
-	ScreenPicker();
+	ScreenPicker(COLORREF color = 0);
 	~ScreenPicker();
 
 	void Create(HINSTANCE inst, HWND parent);
@@ -43,8 +43,6 @@ private:
 	void CreateMaskWindow();
 	static LRESULT CALLBACK MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 	BOOL CALLBACK MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);
-
-	LRESULT OnCtlColorStatic(LPARAM lparam);
 
 	void CreateInfoWindow();
 	static BOOL CALLBACK InfoWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
