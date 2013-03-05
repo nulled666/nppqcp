@@ -105,6 +105,8 @@ class ColorPicker {
 		COLORREF _recent_color_data[10];
 		
 		RECT _rect_palette;
+		bool _is_inside_palette;
+
 		int _old_color_row;
 		int _old_color_index;
 
