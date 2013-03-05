@@ -312,20 +312,20 @@ void ColorPicker::OnInitDialog(){
 	::SetWindowPos(_color_palette, NULL, 6, 6, 253, 169, SWP_NOACTIVATE);
 
 	HWND ctrl = ::GetDlgItem(_color_popup, ID_PICK);
-	::SetWindowPos(ctrl, NULL, 6, 184, 32, 28, SWP_NOZORDER);
+	::MoveWindow(ctrl, 6, 184, 32, 28, false);
 	::SendDlgItemMessage(_color_popup, ID_PICK, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 
 	ctrl = ::GetDlgItem(_color_popup, ID_MORE);
-	::SetWindowPos(ctrl, NULL, 43, 184, 32, 28, SWP_NOZORDER);
+	::MoveWindow(ctrl, 43, 184, 32, 28, false);
 
 	ctrl = ::GetDlgItem(_color_popup, IDC_COLOR_BG);
-	::SetWindowPos(ctrl, NULL, 208, 186, 50, 24, SWP_NOZORDER);
+	::MoveWindow(ctrl, 208, 186, 50, 24, false);
 
-	::SetWindowPos(_color_swatch_current, NULL, 233, 187, 24, 22, SWP_NOZORDER);
-	::SetWindowPos(_color_swatch_new, NULL, 209, 187, 24, 22, SWP_NOZORDER);
+	::MoveWindow(_color_swatch_current, 233, 187, 24, 22, false);
+	::MoveWindow(_color_swatch_new, 209, 187, 24, 22, false);
 
 	ctrl = ::GetDlgItem(_color_popup, IDC_COLOR_TEXT);
-	::SetWindowPos(ctrl, NULL, 100, 191, 80, 20, SWP_NOZORDER);
+	::MoveWindow(ctrl, 100, 191, 80, 20, false);
 
 	// generate palette color array
 	GenerateColorPaletteData();
