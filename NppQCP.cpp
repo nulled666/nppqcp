@@ -31,7 +31,7 @@ bool _enable_qcp = false;
 bool _is_color_picker_shown = false;
 
 
-ColorPicker* _pColorPicker;
+ColorPicker* _pColorPicker = NULL;
 HINSTANCE _instance;
 HWND _message_window;
 
@@ -299,9 +299,9 @@ bool ShowColorPicker(){
 	char hex_str[10];
     ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_str);
 
-	wchar_t hex_color[10];
+	wchar_t hex_color[20];
 
-	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_color));
+	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_str));
 
 	// put current color to picker
 	if (!_pColorPicker->SetHexColor(hex_color)) {
@@ -339,7 +339,10 @@ bool ShowColorPicker(){
 // hide the palette
 void HideColorPicker() {
 	
-	if (!_pColorPicker || !_pColorPicker->IsVisible())
+	if (!_pColorPicker)
+		return;
+
+	if (!_pColorPicker->IsVisible())
 		return;
 
 	_pColorPicker->Hide();
