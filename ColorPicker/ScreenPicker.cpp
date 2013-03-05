@@ -10,14 +10,18 @@
 #define INFO_WINDOW_HEIGHT 100
 #define SWATCH_BG_COLOR 0x666666
 
-ScreenPicker::ScreenPicker(){
+ScreenPicker::ScreenPicker(COLORREF color){
 
 	_instance = NULL;
 	_parent_window = NULL;
 	_mask_window = NULL;
 
-	_old_color = 0;
+	_old_color = color;
 	_new_color = 0;
+
+	_hbrush_old = NULL;
+	_hbrush_new = NULL;
+	_hbrush_bg = NULL;
 
 }
 
@@ -95,10 +99,6 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			SampleColor(lparam);
 			return TRUE;
 		}
-		case WM_ACTIVATE:
-		{
-			return 0;
-		}
 		case WM_LBUTTONUP:
 		{
 			End();
@@ -133,7 +133,7 @@ void ScreenPicker::Start(){
 	int height = mi.rcMonitor.bottom - mi.rcMonitor.top;
 
 	::SetWindowPos(_mask_window, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top, width, height, SWP_SHOWWINDOW);
-
+	::SetActiveWindow(_mask_window);
 }
 
 void ScreenPicker::End(){
@@ -180,8 +180,57 @@ void ScreenPicker::SampleColor(LPARAM lparam){
 	wsprintf(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_RGB, color_rgb);
 
-	::SetDlgItemText(_info_window, IDC_SCR_NEW_COLOR, L"");
-	::SetDlgItemText(_info_window, IDC_SCR_OLD_COLOR, L"");
+	// paint preview
+	HDC hdc_win = ::GetDC(_info_window);
+	RECT rc;
+	HBRUSH brush;
+	
+	HDC hdc_desktop = ::GetDC(HWND_DESKTOP);
+	::StretchBlt(hdc_win, 5, 5, 87, 87, hdc_desktop, x-4, y-4, 9, 9, SRCCOPY);
+	::ReleaseDC(HWND_DESKTOP, hdc_desktop);
+
+	rc.left = 5;
+	rc.top = 5;
+	rc.right = 93;
+	rc.bottom = 93;
+	brush = ::CreateSolidBrush(0);
+	::FrameRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	rc.left = 43;
+	rc.top = 43;
+	rc.right = 54;
+	rc.bottom = 54;
+	brush = ::CreateSolidBrush(_new_color ^ 0xffffff);
+	::FrameRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	// paint color swatch
+	rc.left = 99;
+	rc.top = 6;
+	rc.right = 172;
+	rc.bottom = 32;
+	brush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	rc.left = 100;
+	rc.top = 7;
+	rc.right = 136;
+	rc.bottom = 31;
+	brush = ::CreateSolidBrush(_new_color);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	rc.left = 136;
+	rc.top = 7;
+	rc.right = 171;
+	rc.bottom = 31;
+	brush = ::CreateSolidBrush(_old_color);
+	::FillRect(hdc_win, &rc, brush);
+	::DeleteObject(brush);
+
+	::ReleaseDC(_info_window, hdc_win);
 
 }
 
@@ -228,10 +277,6 @@ BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			PrepareInfoWindow();
 			return TRUE;
 		}
-		case WM_CTLCOLORSTATIC:
-		{
-			return OnCtlColorStatic(lparam);
-		}
 		default:
 		{
 			return FALSE;
@@ -246,55 +291,13 @@ void ScreenPicker::PrepareInfoWindow(){
 	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 0, 0, SWP_HIDEWINDOW);
 	::SetWindowLong(_info_window, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
 
-	HWND ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_RGB);
-	::SetWindowPos(ctrl, NULL, 6, INFO_WINDOW_HEIGHT-38, INFO_WINDOW_WIDTH-52, 16, SWP_NOZORDER);
+	HWND ctrl;
+
+	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_RGB);
+	::SetWindowPos(ctrl, NULL, 100, INFO_WINDOW_HEIGHT-38, 80, 16, SWP_NOZORDER);
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_HEX);
-	::SetWindowPos(ctrl, NULL, 6, INFO_WINDOW_HEIGHT-22, INFO_WINDOW_WIDTH-52, 16, SWP_NOZORDER);
-
-	ctrl = ::GetDlgItem(_info_window, IDC_SCR_OLD_COLOR);
-	::SetWindowPos(ctrl, NULL, INFO_WINDOW_WIDTH-24, 6, 24, 16, SWP_NOZORDER);
-
-	ctrl = ::GetDlgItem(_info_window, IDC_SCR_NEW_COLOR);
-	::SetWindowPos(ctrl, NULL, INFO_WINDOW_WIDTH-48, 6, 24, 16, SWP_NOZORDER);
-	
+	::SetWindowPos(ctrl, NULL, 100, INFO_WINDOW_HEIGHT-22, 80, 16, SWP_NOZORDER);
 
 }
 
-
-// WM_ONCTLCOLORSTATIC
-LRESULT ScreenPicker::OnCtlColorStatic(LPARAM lparam) {
-
-	DWORD ctrl_id = ::GetDlgCtrlID((HWND)lparam);
-
-	switch (ctrl_id) {
-		case IDC_SCR_OLD_COLOR:
-		{
-			if(_hbrush_old != NULL) {
-				::DeleteObject(_hbrush_old);
-			}
-			_hbrush_old = CreateSolidBrush(_old_color);
-			return (LRESULT)_hbrush_old;
-		}
-		case IDC_SCR_NEW_COLOR:
-		{
-			if(_hbrush_new != NULL) {
-				::DeleteObject(_hbrush_new);
-			}
-			_hbrush_new = CreateSolidBrush(_new_color);
-			return (LRESULT)_hbrush_new;
-		}
-		case IDC_COLOR_BG:
-		{
-			if (_hbrush_bg == NULL) {
-				_hbrush_bg = CreateSolidBrush(SWATCH_BG_COLOR);
-			}
-			return (LRESULT)_hbrush_bg;
-		}
-		default:
-		{
-			return FALSE;
-		}
-	}
-
-}
