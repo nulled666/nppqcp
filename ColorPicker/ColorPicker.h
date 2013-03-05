@@ -104,8 +104,11 @@ class ColorPicker {
 		COLORREF _color_palette_data[14][21];
 		COLORREF _recent_color_data[10];
 		
-		HWND _color_palette;
-		WNDPROC _default_color_palette_winproc;
+		RECT _rect_palette;
+
+		COLORREF _previous_color;
+		int _previous_row;
+		int _previous_index;
 
 		bool _is_color_chooser_shown;
 		
@@ -114,8 +117,9 @@ class ColorPicker {
 		BOOL CALLBACK ColorPopupMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);
 
 		void OnInitDialog();
-		LRESULT OnCtlColorStatic(LPARAM lparam);
-		BOOL OnDrawItem(LPARAM lparam);
+		BOOL OnMouseMove(LPARAM lparam);
+		BOOL OnMouseClick(LPARAM lparam);
+
 		void OnSelectColor(LPARAM lparam);
 
 		// palette
@@ -125,8 +129,13 @@ class ColorPicker {
 		void LoadRecentColorData();
 		void PutRecentColor(COLORREF color);
 		void FillRecentColorData();
+
 		void GenerateColorPaletteData();
-		void OnColorPaletteHover(LPARAM lparam);
+
+		void DrawColorPalette();
+		void DrawColorHoverBox(int row, int index, bool is_hover = true);
+
+		bool PointInRect(const POINT p, const RECT rc);
 
 		// screen color picker
 		ScreenPicker* _pScreenPicker;

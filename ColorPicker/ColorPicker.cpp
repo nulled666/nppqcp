@@ -28,13 +28,14 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_current_color_found_in_palette = false;
 	_current_color = color;
 	_new_color = 0;
+	
+	_previous_color = NULL;
+	_previous_row = -1;
+	_previous_index = -1;
 
 	_color_palette_data[14][21] = NULL;
 	_recent_color_data[10] = NULL;
 		
-	_color_palette = NULL;
-	_default_color_palette_winproc = NULL;
-
 	_is_color_chooser_shown = false;
 
 	_pScreenPicker = NULL;
@@ -42,8 +43,6 @@ ColorPicker::ColorPicker(COLORREF color) {
 }
 
 ColorPicker::~ColorPicker() {
-
-	::RemoveProp(_color_palette, L"parent");
 
 	::DestroyWindow(_color_popup);
 
@@ -176,6 +175,7 @@ void ColorPicker::SetParentRect(RECT rc) {
 
 void ColorPicker::Show() {
 
+	DrawColorPalette();
 	PaintColorSwatches();
 	::ShowWindow(_color_popup, SW_SHOW);
 
@@ -224,9 +224,13 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 			OnInitDialog();
 			return TRUE;
 		}
-		case WM_DRAWITEM:
+		case WM_MOUSEMOVE:
 		{
-			return OnDrawItem(lparam);
+			return OnMouseMove(lparam);
+		}
+		case WM_LBUTTONUP:
+		{
+			return OnMouseClick(lparam);
 		}
 		case WM_QCP_SCREEN_PICK:
 		{
@@ -288,15 +292,13 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 // WM_INITDIALOG
 void ColorPicker::OnInitDialog(){
 
-	_color_palette = ::GetDlgItem(_color_popup, IDC_COLOR_PALETTE);
 
 	// dialog control ui stuff
 	_pick_cursor = ::LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
 	HICON hIcon = (HICON)::LoadImage(_instance, MAKEINTRESOURCE(IDI_PICKER), IMAGE_ICON, 16, 16, 0);
 
-	::SetWindowPos(_color_palette, NULL, 6, 6, 253, 169, SWP_NOACTIVATE);
-
-	HWND ctrl = ::GetDlgItem(_color_popup, ID_PICK);
+	HWND ctrl;
+	ctrl = ::GetDlgItem(_color_popup, ID_PICK);
 	::MoveWindow(ctrl, 6, 184, 32, 28, false);
 	::SendDlgItemMessage(_color_popup, ID_PICK, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 
@@ -310,93 +312,174 @@ void ColorPicker::OnInitDialog(){
 	GenerateColorPaletteData();
 	LoadRecentColorData();
 	FillRecentColorData();
-			
-	// fill palette
-	int id = 0;
-	for (int index = 0; index < 21; index++) {
-		for (int row = 0; row < 14; row++) {
-			::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_ADDSTRING, id, (LPARAM)"");
-			::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETITEMDATA , id, (LPARAM)_color_palette_data[row][index]);
-			id++;
-		}
-	}
-	
-	// Subclassing the color palette control
-	::SetProp(_color_palette, L"parent", (HANDLE)this);
-	_default_color_palette_winproc = (WNDPROC) ::SetWindowLongPtr(_color_palette, GWL_WNDPROC, (LONG)ColorPaletteWINPROC);			
 
 }
 
+void ColorPicker::DrawColorPalette(){
+	
+	RECT rc;
+	int base_x = 6;
+	int base_y = 6;
 
-// WM_DRAWENTIRE
-BOOL ColorPicker::OnDrawItem(LPARAM lParam){
-	
-	DRAWITEMSTRUCT *pdis = (DRAWITEMSTRUCT*)lParam;
-	HDC  hdc = pdis->hDC;
-	
-	// Transparent bg
-	SetBkMode(hdc, TRANSPARENT);
-	
-	// NULL object
-	if (pdis->itemID == UINT(-1)) {
-		return FALSE; 
-	}
-			
-	RECT rc = pdis->rcItem;
-	COLORREF cr = (COLORREF)pdis->itemData;
+	COLORREF color;
 	HBRUSH hbrush;
+	HDC hdc = ::GetDC(_color_popup);
 	
-	if (pdis->CtlID == IDC_COLOR_PALETTE) {
+	// frame
+	rc.left = base_x;
+	rc.top =  base_y;
+	rc.right = base_x+12*21;
+	rc.bottom = base_y+12*14;
+	
+	// save the area rect for later use
+	::CopyRect(&_rect_palette, &rc);
+
+	::InflateRect(&rc, 1, 1);
+
+	hbrush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	::FrameRect(hdc, &rc, hbrush);
+	::DeleteObject(hbrush);
+
+	// swatches
+	for (int row = 0; row < 14; row++) {
 		
-		switch (pdis->itemAction) {
-			case ODA_DRAWENTIRE:
-			{
-				rc = pdis->rcItem;
-				rc.right++;
-				rc.bottom++;
-				hbrush = ::CreateSolidBrush((COLORREF)cr);
-				::FillRect(hdc, &rc, hbrush);
-				::DeleteObject(hbrush);
-				hbrush = ::CreateSolidBrush(RGB(0,0,0));
+		rc.top = base_y + 12*row;
+		rc.bottom = rc.top + 12;
+		rc.left = base_x;
+		rc.right = rc.left + 12;
+
+		for (int index = 0; index < 21; index++) {
+
+			color = _color_palette_data[row][index];
+			hbrush = ::CreateSolidBrush(color);
+			::FillRect(hdc, &rc, hbrush);
+			::DeleteObject(hbrush);
+
+			if(color == _current_color){
+				hbrush = ::CreateSolidBrush(color ^ 0xffffff);
 				::FrameRect(hdc, &rc, hbrush);
 				::DeleteObject(hbrush);
-				// *** FALL THROUGH ***
 			}
-			case ODA_SELECT:
-			{
-				rc = pdis->rcItem;
-				rc.right++;
-				rc.bottom++;
-				if (pdis->itemState & ODS_SELECTED)	{
-					// hovered cell - draw a invert inner box
-					::InflateRect(&rc, -1, -1);
-					COLORREF color = cr ^ 0xffffff;
-					hbrush = ::CreateSolidBrush( color );
-					::FrameRect(hdc, &rc, hbrush);
-					::DeleteObject(hbrush);
-				} else {
-					// normal cell - redraw the inner box
-					::InflateRect(&rc, -1, -1);
-					if (!_current_color_found_in_palette && cr == _current_color) {
-						hbrush = ::CreateSolidBrush(cr ^ 0xffffff);
-						_current_color_found_in_palette = true;
-					} else {
-						hbrush = ::CreateSolidBrush((COLORREF)cr);
-					}
-					::FrameRect(hdc, &rc, hbrush);
-					::DeleteObject(hbrush);
-				}
-				break;
-			}
-			default:
-			{
-				// nothing
-			}
+
+			rc.left += 12;
+			rc.right += 12;
+
 		}
+
+	}
+
+	::ReleaseDC(_color_popup, hdc);
+
+}
+
+// WM_MOUSEMOVE
+BOOL ColorPicker::OnMouseMove(LPARAM lparam){
+	
+	POINT p;
+	p.x = GET_X_LPARAM(lparam);
+	p.y = GET_Y_LPARAM(lparam);
+
+	if (PointInRect(p, _rect_palette)) {
+		
+		// inside palette area
+
+		::SetCursor(_pick_cursor);
+
+		int index = round((p.x-_rect_palette.left)/12);
+		int row = round((p.y-_rect_palette.top)/12);
+		if (index<0) index = 0;
+		if (row<0) row = 0;
+
+		if (index>21 || row>14)
+			return TRUE;
+
+		COLORREF color = _color_palette_data[row][index];
+
+		// no change
+		if (_previous_row==row && _previous_index==index)
+			return TRUE;
+
+		// clean previous swatch - if not old color
+		if (_previous_row != -1  && _previous_color != _current_color) {
+			DrawColorHoverBox(_previous_row, _previous_index, false);
+		}
+
+		// draw current swatch
+		DrawColorHoverBox(row, index, true);
+
+		_previous_color = color;
+		_previous_row = row;
+		_previous_index = index;
+
+		DisplayNewColor(color);
+
+	} else {
+		
+		// outside palette
+
+		if (_previous_row != -1) {
+			if (_previous_color != _current_color)
+				DrawColorHoverBox(_previous_row, _previous_index, false);
+			_previous_color = NULL;
+			_previous_row = -1;
+			_previous_index = -1;
+		}
+
+		DisplayNewColor(_current_color);
 
 	}
 
 	return TRUE;
+
+}
+
+void ColorPicker::DrawColorHoverBox(int row, int index, bool is_hover) {
+
+	HDC hdc = ::GetDC(_color_popup);
+	HBRUSH hbrush;
+	RECT rc;
+	COLORREF color;
+
+	color = _color_palette_data[row][index];
+	if (is_hover)
+		color = color ^ 0xffffff;
+
+	rc.left = _rect_palette.left + index*12;
+	rc.right = rc.left + 12;
+	rc.top = _rect_palette.top + row*12;
+	rc.bottom = rc.top + 12;
+	hbrush = ::CreateSolidBrush(color);
+	::FrameRect(hdc, &rc, hbrush);
+	::DeleteBrush(hbrush);
+
+	::ReleaseDC(_color_popup, hdc);
+
+}
+
+// WM_LBUTTONUP
+BOOL ColorPicker::OnMouseClick(LPARAM lparam){
+
+	POINT p;
+	p.x = GET_X_LPARAM(lparam);
+	p.y = GET_Y_LPARAM(lparam);
+
+	if (PointInRect(p, _rect_palette)) {
+
+		_current_color = _new_color;
+
+		PutRecentColor(_new_color);
+
+		::SendMessage(_message_window, WM_QCP_PICK, _current_color, 0);
+
+	}
+
+	return TRUE;
+
+}
+
+bool ColorPicker::PointInRect(const POINT p, const RECT rc) {
+	
+	return p.x>rc.left && p.x<rc.right && p.y>rc.top && p.y<rc.bottom;
 
 }
 
@@ -512,6 +595,11 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 
 }
 
+
+///////////////////////////////////////////////////////////////////
+// COLOR PALETTE
+///////////////////////////////////////////////////////////////////
+ 
 void ColorPicker::PaintColorSwatches() {
 	
 	// paint swatch /////////
@@ -549,60 +637,6 @@ void ColorPicker::PaintColorSwatches() {
 	::ReleaseDC(_color_popup, hdc_win);
 }
 
-
-///////////////////////////////////////////////////////////////////
-// COLOR PALETTE
-///////////////////////////////////////////////////////////////////
- 
-//Subclassing Procedure for palette
-LRESULT CALLBACK ColorPicker::ColorPaletteWINPROC(HWND hWnd, UINT message, WPARAM wParam,LPARAM lParam)
-{
-	ColorPicker* hPopup = (ColorPicker*) ::GetProp(hWnd, L"parent");
-
-	return hPopup->ColorPaletteMessageHandle(hWnd, message, wParam, lParam);
-}
-
-BOOL ColorPicker::ColorPaletteMessageHandle(HWND hWnd, UINT message, WPARAM wParam,LPARAM lParam)
-{
-    switch(message)
-    {
-		case WM_SETCURSOR:
-			::SetCursor(_pick_cursor);
-			return TRUE;
-
-		case WM_MOUSEMOVE:
-			TRACKMOUSEEVENT tme;
-			tme.cbSize = sizeof(tme);
-			tme.dwFlags = TME_LEAVE;
-			tme.hwndTrack = hWnd;
-			TrackMouseEvent(&tme);
-
-			OnColorPaletteHover(lParam);
-			return TRUE;
-         
-		case WM_MOUSELEAVE:
-			DisplayNewColor(_current_color);
-			return TRUE;
-
-		default:
-			return CallWindowProc(_default_color_palette_winproc, hWnd, message, wParam, lParam);
-    }
-}
-
-
-void ColorPicker::OnColorPaletteHover(LPARAM lParam){
-	
-	LRESULT index = ::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_ITEMFROMPOINT, 0, lParam);
-		
-	if(index < 0 || index > (21*14-1) ) return;
-
-	::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETCURSEL, (WPARAM)LOWORD(index), NULL);
-
-	COLORREF color = (COLORREF)::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_GETITEMDATA , index, NULL);
-			
-	DisplayNewColor(color);
-
-}
 
 
 /////////////////////////////////////////////////////////////////////

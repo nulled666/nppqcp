@@ -3,22 +3,21 @@
 
 #include "ColorPicker.res.h"
 
+// resources
 IDI_PICKER ICON "picker.ico"
 IDI_CURSOR CURSOR "picker.cur"
 
+// color picker popup
 IDD_COLOR_PICKER_POPUP DIALOGEX 0, 0, 174, 124
 STYLE DS_SETFONT | WS_POPUP | WS_BORDER
 FONT 9, TEXT("MS Shell Dlg"), 0, 0, 0x0
 BEGIN
-    LISTBOX         IDC_COLOR_PALETTE,1,1,172,104,
-                    LBS_OWNERDRAWFIXED | LBS_NOINTEGRALHEIGHT | 
-                    LBS_MULTICOLUMN | NOT WS_BORDER | WS_TABSTOP
 	DEFPUSHBUTTON   "", ID_PICK, 5, 114, 16, 16, BS_ICON
     PUSHBUTTON		"...", ID_MORE, 22, 114, 16, 16
     CTEXT			"", IDC_COLOR_TEXT, 72, 118, 80, 16
 END
 
-
+// screen color picker info panel
 IDD_SCREEN_PICKER_POPUP DIALOGEX 0, 0, 120, 120
 STYLE DS_SETFONT | WS_POPUP | WS_BORDER
 FONT 9, TEXT("MS Shell Dlg"), 0, 0, 0x0
