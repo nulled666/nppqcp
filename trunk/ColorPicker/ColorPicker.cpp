@@ -36,9 +36,6 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_previous_color = NULL;
 	_previous_row = -1;
 	_previous_index = -1;
-
-	_color_palette_data[14][21] = NULL;
-	_recent_color_data[10] = NULL;
 		
 	_is_color_chooser_shown = false;
 
@@ -67,7 +64,7 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 	_color_popup = ::CreateDialogParam(_instance, MAKEINTRESOURCE(IDD_COLOR_PICKER_POPUP), _parent_window, (DLGPROC)ColorPopupWINPROC, (LPARAM)this);
 	
 	if (message_window == NULL) {
-		_message_window = message_window;
+		_message_window = _parent_window;
 	} else {
 		_message_window = message_window;
 	}
