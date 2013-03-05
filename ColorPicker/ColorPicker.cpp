@@ -36,7 +36,8 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_previous_color = NULL;
 	_previous_row = -1;
 	_previous_index = -1;
-		
+	
+	_is_first_create = false;
 	_is_color_chooser_shown = false;
 
 	_pScreenPicker = NULL;
@@ -60,6 +61,8 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 
 	_instance = instance;
 	_parent_window = parent;
+
+	_is_first_create = true;
 
 	_color_popup = ::CreateDialogParam(_instance, MAKEINTRESOURCE(IDD_COLOR_PICKER_POPUP), _parent_window, (DLGPROC)ColorPopupWINPROC, (LPARAM)this);
 	
@@ -273,8 +276,13 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		case WM_ACTIVATE:
 		{
 			if (LOWORD(wparam) == WA_INACTIVE) {
+				if (_is_first_create) {
+					// prevent this message at first create
+					_is_first_create = false;
+					return TRUE;
+				}
 				if (!_is_color_chooser_shown) {
-					::SendMessage(_message_window, WM_QCP_CANCEL, 0, 0);
+					::SendMessage(_message_window, WM_QCP_DEACTIVATE, 0, 0);
 				}
 			}
 			return TRUE;
