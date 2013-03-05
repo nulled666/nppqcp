@@ -241,17 +241,17 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		{
 			return OnDrawItem(lparam);
 		}
-		case WM_SCREEN_HOVER_COLOR:
+		case WM_QCP_SCREEN_PICK:
 		{
-			DisplayNewColor((COLORREF)lparam);
+			EndPickScreenColor();
+			COLORREF color = (COLORREF)wparam;
+			PutRecentColor(color);
+			::SendMessage(_message_window, WM_QCP_PICK, wparam, 0);
 			return TRUE;
 		}
-		case WM_SCREEN_PICK_COLOR:
+		case WM_QCP_SCREEN_CANCEL:
 		{
-			COLORREF color = (COLORREF)lparam;
-			PutRecentColor(color);
-			::SetActiveWindow(_color_popup);
-			::SendMessage(_message_window, WM_PICKUP_COLOR, color, 0);
+			EndPickScreenColor();
 			return TRUE;
 		}
 		case WM_COMMAND:
@@ -281,7 +281,7 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		{
 			if (LOWORD(wparam) == WA_INACTIVE) {
 				if (!_is_color_chooser_shown) {
-					::SendMessage(_message_window, WM_PICKUP_CANCEL, 0, 0);
+					::SendMessage(_message_window, WM_QCP_CANCEL, 0, 0);
 				}
 			}
 			return TRUE;
@@ -468,14 +468,17 @@ void ColorPicker::OnSelectColor(LPARAM lparam){
 
 	PutRecentColor(color);
 
-	::SendMessage(_message_window, WM_PICKUP_COLOR, _current_color, 0);
+	::SendMessage(_message_window, WM_QCP_PICK, _current_color, 0);
 
 }
 
 // WM_COMMAND -> ID_PICK
-// track mouse
+// start the screen picker
 void ColorPicker::StartPickScreenColor(){
-	
+
+	::ShowWindow(_color_popup, SW_HIDE);
+	::SendMessage(_message_window, WM_QCP_START_SCREEN_PICKER, 0, 0);
+
 	if (!_pScreenPicker) {
 		_pScreenPicker = new ScreenPicker();
 		_pScreenPicker->Create(_instance, _color_popup);
@@ -484,6 +487,13 @@ void ColorPicker::StartPickScreenColor(){
 	_pScreenPicker->Color(_current_color);
 	_pScreenPicker->Start();
 
+}
+
+void ColorPicker::EndPickScreenColor(){
+
+	::ShowWindow(_color_popup, SW_SHOW);
+	::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
+	
 }
 
 
@@ -517,9 +527,9 @@ void ColorPicker::ShowColorChooser(){
 
 	if (ChooseColor(&cc)==TRUE) {
 		PutRecentColor(cc.rgbResult);
-		::SendMessage(_message_window, WM_PICKUP_COLOR, cc.rgbResult, 0);
+		::SendMessage(_message_window, WM_QCP_PICK, cc.rgbResult, 0);
 	} else {
-		::SendMessage(_message_window, WM_PICKUP_CANCEL, 0, 0);
+		::SendMessage(_message_window, WM_QCP_CANCEL, 0, 0);
 	}
 
 }

@@ -206,11 +206,21 @@ void DestroyMessageWindow() {
 LRESULT CALLBACK MessageWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
-		case WM_PICKUP_COLOR: {
+		case WM_QCP_PICK:
+		{
 			WriteColorCodeToEditor((COLORREF)wparam);
 			break;
 		}
-		default: {
+		case WM_QCP_START_SCREEN_PICKER:
+		{
+			::SetWindowPos(nppData._nppHandle, HWND_BOTTOM, 0,0,0,0, SWP_NOMOVE|SWP_NOSIZE);
+		}
+		case WM_QCP_END_SCREEN_PICKER:
+		{
+			::ShowWindow(nppData._nppHandle, SW_SHOW);
+		}
+		default:
+		{
 			return TRUE;
 		}
 	}

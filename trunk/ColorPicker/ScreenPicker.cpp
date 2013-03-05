@@ -102,20 +102,22 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 		case WM_MOUSEMOVE:
 		{
 			::SetCursor(_cursor);
-			SampleColor(lparam);
+			int x = GET_X_LPARAM(lparam);
+			int y = GET_Y_LPARAM(lparam);
+			SampleColor(x, y);
 			return TRUE;
 		}
 		case WM_LBUTTONUP:
 		{
 			End();
-			::SendMessage(_parent_window, WM_SCREEN_PICK_COLOR, 0, (LPARAM)_new_color);
+			::SendMessage(_parent_window, WM_QCP_SCREEN_PICK, (WPARAM)_new_color, 0);
 			return TRUE;
 		}
 		case WM_HOTKEY:
 		case WM_RBUTTONUP:
 		{
 			End();
-			::SendMessage(_parent_window, WM_SCREEN_PICK_CANCEL, 0, 0);
+			::SendMessage(_parent_window, WM_QCP_SCREEN_CANCEL, 0, 0);
 			return TRUE;
 		}
 		default:
@@ -139,6 +141,7 @@ void ScreenPicker::Start(){
 	int width = mi.rcMonitor.right - mi.rcMonitor.left;
 	int height = mi.rcMonitor.bottom - mi.rcMonitor.top;
 
+	::SetWindowPos(_info_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE);
 	::SetWindowPos(_mask_window, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top, width, height, SWP_SHOWWINDOW);
 
 	_is_shown = true;
@@ -148,22 +151,20 @@ void ScreenPicker::Start(){
 void ScreenPicker::End(){
 
 	::SetWindowPos(_mask_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW);
-	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 0, 0, SWP_HIDEWINDOW);
+	::SetWindowPos(_info_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW|SWP_NOSIZE);
 
 	_is_shown = false;
 
 }
 
-void ScreenPicker::SampleColor(LPARAM lparam){
-	
-	int x = GET_X_LPARAM(lparam);
-	int y = GET_Y_LPARAM(lparam);
+void ScreenPicker::SampleColor(int x, int y){
 
 	HDC hdc = ::GetDC(HWND_DESKTOP);
 	_new_color = ::GetPixel(hdc, x, y);
 	::ReleaseDC(HWND_DESKTOP, hdc);
 
-	::SendMessage(_parent_window, WM_SCREEN_HOVER_COLOR, 0, (LPARAM)_new_color);
+	// notify parent
+	::SendMessage(_parent_window, WM_QCP_SCREEN_HOVER, (WPARAM)_new_color, 0);
 
 	// place info window
 	HMONITOR monitor = ::MonitorFromWindow(_parent_window, MONITOR_DEFAULTTONEAREST);
@@ -180,7 +181,7 @@ void ScreenPicker::SampleColor(LPARAM lparam){
 	if(win_y < mi.rcMonitor.top)
 		win_y = y+20;
 
-	::SetWindowPos(_info_window, HWND_TOP, win_x, win_y, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, SWP_SHOWWINDOW);
+	::SetWindowPos(_info_window, NULL, win_x, win_y, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
 
 	// display color text
 	wchar_t color_hex[10];
@@ -288,6 +289,15 @@ BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			PrepareInfoWindow();
 			return TRUE;
 		}
+		case WM_MOUSEMOVE:
+		{
+			POINT p;
+			p.x = GET_X_LPARAM(lparam);
+			p.y = GET_Y_LPARAM(lparam);
+			::ClientToScreen(_info_window, &p);
+			SampleColor(p.x, p.y);
+			return TRUE;
+		}
 		default:
 		{
 			return FALSE;
@@ -299,7 +309,7 @@ BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 
 void ScreenPicker::PrepareInfoWindow(){
 
-	::SetWindowPos(_info_window, HWND_TOP, 0, 0, 0, 0, SWP_HIDEWINDOW);
+	::SetWindowPos(_info_window, HWND_TOP, 0, 0, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, SWP_HIDEWINDOW);
 	::SetWindowLong(_info_window, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
 
 	HWND ctrl;
