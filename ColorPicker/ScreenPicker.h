@@ -55,7 +55,7 @@ private:
 
 	void PrepareInfoWindow();
 
-	void SampleColor(LPARAM lparam);
+	void SampleColor(int x, int y);
 
 };
 

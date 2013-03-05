@@ -9,11 +9,11 @@ USAGE:
 		pColorPicker->SetParentRect(rc);
 		pColorPicker->Show(true);
 
-	listen to message:
-		WM_PICKUP_COLOR
+	messages:
+		WM_QCP_PICK
 			User picked a color
 			LPARAM is the color in COLORREF format
-		WM_PICK_CANCEL
+		WM_QCP_CANCEL
 			User cancelled the operation
 
 
@@ -140,7 +140,6 @@ class ColorPicker {
 		// screen color picker
 		ScreenPicker* _pScreenPicker;
 		void StartPickScreenColor();
-		void SampleScreenColor();
 		void EndPickScreenColor();
 
 		// windows color chooser
