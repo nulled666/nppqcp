@@ -21,6 +21,9 @@ public:
 	void Start();
 	void End();
 	
+	bool IsShow() {
+		return _is_shown;
+	}
 
 private:
 
@@ -28,6 +31,8 @@ private:
 	HWND _parent_window;
 	HWND _mask_window;
 	HWND _info_window;
+
+	bool _is_shown;
 
 	HWND _zoom_area;
 
