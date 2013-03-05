@@ -106,6 +106,7 @@ class ColorPicker {
 		
 		RECT _rect_palette;
 
+		POINT _old_color_pos;
 		COLORREF _previous_color;
 		int _previous_row;
 		int _previous_index;

@@ -22,13 +22,15 @@ ColorPicker::ColorPicker(COLORREF color) {
 	
 	_message_window = NULL;
 
-
 	_pick_cursor = NULL;
 
 	_current_color_found_in_palette = false;
 	_current_color = color;
 	_new_color = 0;
 	
+	_old_color_pos.x = -1;
+	_old_color_pos.y = -1;
+
 	_previous_color = NULL;
 	_previous_row = -1;
 	_previous_index = -1;
@@ -334,6 +336,7 @@ void ColorPicker::DrawColorPalette(){
 	::DeleteObject(hbrush);
 
 	// swatches
+	bool found = false;
 	for (int row = 0; row < 14; row++) {
 		
 		rc.top = base_y + 12*row;
@@ -348,10 +351,11 @@ void ColorPicker::DrawColorPalette(){
 			::FillRect(hdc, &rc, hbrush);
 			::DeleteObject(hbrush);
 
-			if(color == _current_color){
-				hbrush = ::CreateSolidBrush(color ^ 0xffffff);
-				::FrameRect(hdc, &rc, hbrush);
-				::DeleteObject(hbrush);
+			if (!found && color == _current_color) {
+				_old_color_pos.x = index;
+				_old_color_pos.y = row;
+				if(row>2 || index>4)
+					found = true;
 			}
 
 			rc.left += 12;
@@ -360,6 +364,8 @@ void ColorPicker::DrawColorPalette(){
 		}
 
 	}
+
+	DrawColorHoverBox(_old_color_pos.y, _old_color_pos.x, true);
 
 	::ReleaseDC(_color_popup, hdc);
 
@@ -392,8 +398,8 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 		if (_previous_row==row && _previous_index==index)
 			return TRUE;
 
-		// clean previous swatch - if not old color
-		if (_previous_row != -1  && _previous_color != _current_color) {
+		// clean previous swatch
+		if (_previous_row != -1 && (_previous_row!=_old_color_pos.y || _previous_index!=_old_color_pos.x)) {
 			DrawColorHoverBox(_previous_row, _previous_index, false);
 		}
 
@@ -411,8 +417,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 		// outside palette
 
 		if (_previous_row != -1) {
-			if (_previous_color != _current_color)
-				DrawColorHoverBox(_previous_row, _previous_index, false);
+			DrawColorHoverBox(_previous_row, _previous_index, false);
 			_previous_color = NULL;
 			_previous_row = -1;
 			_previous_index = -1;
