@@ -36,10 +36,6 @@ private:
 
 	HWND _zoom_area;
 
-	HBRUSH _hbrush_old;
-	HBRUSH _hbrush_new;
-	HBRUSH _hbrush_bg;
-
 	HCURSOR _cursor;
 
 	COLORREF _old_color;
