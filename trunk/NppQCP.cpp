@@ -2,22 +2,18 @@
 
 #include "NppQCP.h"
 
+#include "ColorPicker\ColorPicker.h"
+#include "ColorPicker\ColorPicker.res.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <shlwapi.h>
+#include <commctrl.h>
 
-#include "ColorPicker\ColorPicker.h"
-#include "ColorPicker\ColorPicker.res.h"
+#pragma comment(lib, "comctl32.lib")
 
-
-const wchar_t _ini_section[] = L"nppqcp";
-const wchar_t _ini_key[] = L"enabled";
-const wchar_t _ini_file[] = L"nppqcp.ini";
-
-
-//
 // The data of Notepad++ that you can use in your plugin commands
 // extern variables - don't change the name
 NppData nppData;
@@ -25,11 +21,15 @@ FuncItem funcItem[_command_count];
 bool doCloseTag;
 
 
+#define NPP_SUBCLASS_ID 101
+
+const wchar_t _ini_section[] = L"nppqcp";
+const wchar_t _ini_key[] = L"enabled";
+const wchar_t _ini_file[] = L"nppqcp.ini";
+
 TCHAR _ini_file_path[MAX_PATH];
 bool _enable_qcp = false;
-
 bool _is_color_picker_shown = false;
-
 
 ColorPicker* _pColorPicker = NULL;
 HINSTANCE _instance;
@@ -37,23 +37,32 @@ HWND _message_window;
 
 
 //
-// Initialize your plugin data here
-// It will be called while plugin loading   
-void PluginInit(HANDLE module) {
 
-	// save for internal dialogs
+void AttachDll(HANDLE module) {
+
 	_instance = (HINSTANCE)module;
-
-	CreateMessageWindow();
 
 }
 
-//
-// Here you can do the clean up, save the parameters (if any) for the next session
-//
+// Initialize plugin - will be called when setInfo(), after nppData is available
+void PluginInit() {
+
+	LoadConfig();
+
+	CreateMessageWindow();
+	AddNppSubclass();
+
+	InitCommandMenu();
+
+}
+
+// End plugin
 void PluginCleanUp() {
 
+	SaveConfig();
+
 	DestroyMessageWindow();
+	RemoveNppSubclass();
 
 }
 
@@ -177,7 +186,7 @@ void CreateMessageWindow() {
 	
 	WNDCLASSEX wc    = {0};
 	wc.cbSize        = sizeof(wc);
-	wc.lpfnWndProc   = MessageWindowWINPROC;
+	wc.lpfnWndProc   = MessageWindowWinproc;
 	wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
     wc.hInstance     = _instance;
@@ -203,7 +212,7 @@ void DestroyMessageWindow() {
 }
 
 // message proccessor
-LRESULT CALLBACK MessageWindowWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK MessageWindowWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
 		case WM_QCP_PICK:
@@ -250,6 +259,36 @@ HWND GetScintilla() {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// NPP SUBCLASSING
+////////////////////////////////////////////////////////////////////////////////
+
+void AddNppSubclass(){
+
+	::SetWindowSubclass(nppData._scintillaMainHandle, NppSubclassProc, NPP_SUBCLASS_ID, NULL);
+	::SetWindowSubclass(nppData._scintillaSecondHandle, NppSubclassProc, NPP_SUBCLASS_ID, NULL);
+
+}
+
+void RemoveNppSubclass(){
+	
+	::RemoveWindowSubclass(nppData._scintillaMainHandle, NppSubclassProc, NPP_SUBCLASS_ID);
+	::RemoveWindowSubclass(nppData._scintillaSecondHandle, NppSubclassProc, NPP_SUBCLASS_ID);
+
+}
+
+LRESULT CALLBACK NppSubclassProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+	
+	switch (message) {
+		case WM_KEYDOWN:
+			// hide the palette when user is typing or copy/paste
+			HideColorPicker();
+			break;
+	}
+
+	return DefSubclassProc(hwnd, message, wparam, lparam);
+
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,7 +313,7 @@ bool ShowColorPicker(){
 
 	HWND h_scintilla = GetScintilla();
 
-	// detect whether selected content is a color code
+	// detect hex color code
 	int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
 	int selection_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
 	int len = selection_end - selection_start;
@@ -284,9 +323,13 @@ bool ShowColorPicker(){
 		return false;
 
 	char mark = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, selection_start - 1, 0);
-
 	// break - no # mark
 	if (mark == 0 || mark != '#')
+		return false;
+
+	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, selection_end, 0);
+	// break - next char is still hex char
+	if (strchr("01234567890abcdefABCDEF", next_char) != NULL)
 		return false;
 
 	// passed -

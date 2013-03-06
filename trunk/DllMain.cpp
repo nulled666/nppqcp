@@ -16,10 +16,9 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
     switch (reasonForCall) {
       case DLL_PROCESS_ATTACH:
-        PluginInit(hModule);
+        AttachDll(hModule);
         break;
       case DLL_PROCESS_DETACH:
-		SaveConfig();
         PluginCleanUp();
         break;
       case DLL_THREAD_ATTACH:
@@ -35,8 +34,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData) {
 	nppData = notpadPlusData;
-	LoadConfig();
-	InitCommandMenu();
+	PluginInit();
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName() {

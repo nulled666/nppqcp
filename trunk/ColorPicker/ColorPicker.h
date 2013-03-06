@@ -74,7 +74,7 @@ class ColorPicker {
 		// Other stuffs here
 		void Color(COLORREF color, bool is_rgb = false);
 		COLORREF Color(){
-			return _current_color;
+			return _old_color;
 		}
 
 		bool SetHexColor(const wchar_t* hex_color);
@@ -97,8 +97,8 @@ class ColorPicker {
 
 		HCURSOR _pick_cursor;
 
-		bool _current_color_found_in_palette;
-		COLORREF _current_color;
+		bool _old_color_found_in_palette;
+		COLORREF _old_color;
 		COLORREF _new_color;
 
 		COLORREF _color_palette_data[14][21];
@@ -118,19 +118,14 @@ class ColorPicker {
 		bool _is_color_chooser_shown;
 		
 		// main popup
-		static BOOL CALLBACK ColorPopupWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+		static BOOL CALLBACK ColorPopupWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 		BOOL CALLBACK ColorPopupMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);
 
 		void OnInitDialog();
 		BOOL OnMouseMove(LPARAM lparam);
 		BOOL OnMouseClick(LPARAM lparam);
-
-		void OnSelectColor(LPARAM lparam);
-
+		
 		// palette
-		static LRESULT CALLBACK ColorPaletteWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-		BOOL CALLBACK ColorPaletteMessageHandle(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-
 		void LoadRecentColorData();
 		void PutRecentColor(COLORREF color);
 		void FillRecentColorData();
@@ -142,6 +137,9 @@ class ColorPicker {
 
 		bool PointInRect(const POINT p, const RECT rc);
 
+		void DisplayNewColor(COLORREF color);
+		void PaintColorSwatches();
+
 		// screen color picker
 		ScreenPicker* _pScreenPicker;
 		void StartPickScreenColor();
@@ -150,9 +148,6 @@ class ColorPicker {
 		// windows color chooser
 		void ShowColorChooser();
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-
-		void DisplayNewColor(COLORREF color);
-		void PaintColorSwatches();
 
 		int round(double number);
 
