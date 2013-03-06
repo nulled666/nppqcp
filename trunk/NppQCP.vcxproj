@@ -119,6 +119,7 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ColorPicker\ColorPicker.rc" />
+    <ResourceCompile Include="NppQCP.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ColorPicker\picker.cur" />

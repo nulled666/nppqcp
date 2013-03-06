@@ -68,5 +68,8 @@
     <ResourceCompile Include="ColorPicker\ColorPicker.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+    <ResourceCompile Include="NppQCP.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
