@@ -146,7 +146,11 @@ void ScreenPicker::Start(){
 	int width = mi.rcMonitor.right - mi.rcMonitor.left;
 	int height = mi.rcMonitor.bottom - mi.rcMonitor.top;
 
-	::SetWindowPos(_info_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE);
+	POINT p;
+	::GetCursorPos(&p);
+	PlaceInfoWindow(p.x, p.y);
+	::SetWindowPos(_info_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE);
+
 	::SetWindowPos(_mask_window, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top, width, height, SWP_SHOWWINDOW);
 
 	_is_shown = true;
@@ -155,14 +159,18 @@ void ScreenPicker::Start(){
 
 void ScreenPicker::End(){
 
-	::SetWindowPos(_mask_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW);
-	::SetWindowPos(_info_window, HWND_TOPMOST, 0, 0, 0, 0, SWP_HIDEWINDOW|SWP_NOSIZE);
+	::ShowWindow(_mask_window, SW_HIDE);
+	::ShowWindow(_info_window, SW_HIDE);
 
 	_is_shown = false;
 
 }
 
 void ScreenPicker::SampleColor(int x, int y){
+
+	// avoid redundant redraw
+	if(!_is_shown)
+		return;
 
 	HDC hdc = ::GetDC(HWND_DESKTOP);
 	_new_color = ::GetPixel(hdc, x, y);
@@ -172,21 +180,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	::SendMessage(_parent_window, WM_QCP_SCREEN_HOVER, (WPARAM)_new_color, 0);
 
 	// place info window
-	HMONITOR monitor = ::MonitorFromWindow(_parent_window, MONITOR_DEFAULTTONEAREST);
-	MONITORINFO mi;
-	mi.cbSize = sizeof(MONITORINFO);
-	::GetMonitorInfo(monitor, (LPMONITORINFO)&mi);
-
-	int win_x = x+20;
-	int win_y = y-20-INFO_WINDOW_HEIGHT;
-	
-	if(win_x + INFO_WINDOW_WIDTH > mi.rcMonitor.right)
-		win_x = x-20-INFO_WINDOW_WIDTH;
-
-	if(win_y < mi.rcMonitor.top)
-		win_y = y+20;
-
-	::MoveWindow(_info_window, win_x, win_y, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, false);
+	PlaceInfoWindow(x, y);
 
 	// display color text
 	wchar_t color_hex[10];
@@ -333,3 +327,23 @@ void ScreenPicker::PrepareInfoWindow(){
 
 }
 
+void ScreenPicker::PlaceInfoWindow(int x, int y) {
+
+	HMONITOR monitor = ::MonitorFromWindow(_parent_window, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO mi;
+	mi.cbSize = sizeof(MONITORINFO);
+	::GetMonitorInfo(monitor, (LPMONITORINFO)&mi);
+
+	int win_x = x+20;
+	int win_y = y-20-INFO_WINDOW_HEIGHT;
+	
+	if(win_x + INFO_WINDOW_WIDTH > mi.rcMonitor.right)
+		win_x = x-20-INFO_WINDOW_WIDTH;
+
+	if(win_y < mi.rcMonitor.top)
+		win_y = y+20;
+
+	::MoveWindow(_info_window, win_x, win_y, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, false);
+
+
+}

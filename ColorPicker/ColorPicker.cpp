@@ -245,9 +245,9 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		}
 		case WM_QCP_SCREEN_PICK:
 		{
-			EndPickScreenColor();
 			COLORREF color = (COLORREF)wparam;
 			PutRecentColor(color);
+			::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
 			::SendMessage(_message_window, WM_QCP_PICK, wparam, 0);
 			return TRUE;
 		}
@@ -504,6 +504,7 @@ bool ColorPicker::PointInRect(const POINT p, const RECT rc) {
 void ColorPicker::StartPickScreenColor(){
 
 	::ShowWindow(_color_popup, SW_HIDE);
+
 	::SendMessage(_message_window, WM_QCP_START_SCREEN_PICKER, 0, 0);
 
 	if (!_pScreenPicker) {
@@ -518,9 +519,9 @@ void ColorPicker::StartPickScreenColor(){
 
 void ColorPicker::EndPickScreenColor(){
 
-	::ShowWindow(_color_popup, SW_SHOW);
 	::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
 	
+	::ShowWindow(_color_popup, SW_SHOW);
 	DrawColorPalette();
 	PaintColorSwatches();
 

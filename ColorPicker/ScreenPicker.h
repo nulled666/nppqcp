@@ -50,6 +50,7 @@ private:
 	BOOL CALLBACK InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);
 
 	void PrepareInfoWindow();
+	void PlaceInfoWindow(int x, int y);
 
 	void SampleColor(int x, int y);
 
