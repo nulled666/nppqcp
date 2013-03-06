@@ -26,17 +26,18 @@ bool doCloseTag;
 const wchar_t _ini_section[] = L"nppqcp";
 const wchar_t _ini_key[] = L"enabled";
 const wchar_t _ini_file[] = L"nppqcp.ini";
-
 TCHAR _ini_file_path[MAX_PATH];
-bool _enable_qcp = false;
-bool _is_color_picker_shown = false;
+
 
 ColorPicker* _pColorPicker = NULL;
 HINSTANCE _instance;
 HWND _message_window;
 
+bool _enable_qcp = false;
+bool _is_color_picker_shown = false;
+int _last_select_start = -1;
+int _last_select_end = -1;
 
-//
 
 void AttachDll(HANDLE module) {
 
@@ -316,6 +317,14 @@ bool ShowColorPicker(){
 	// detect hex color code
 	int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
 	int selection_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
+
+	// if this selection hasn't changed
+	if(_last_select_start == selection_start && _last_select_start == selection_end)
+		return false;
+
+	_last_select_start = selection_start;
+	_last_select_start = selection_end;
+
 	int len = selection_end - selection_start;
 
 	// break - wrong length
