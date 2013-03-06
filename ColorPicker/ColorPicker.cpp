@@ -88,10 +88,9 @@ void ColorPicker::Color(COLORREF color, bool is_rgb) {
 	_old_color = color;
 	_old_color_found_in_palette = false;
 
-	DisplayNewColor(color);
-
-	// remove hover box
-	::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETCURSEL, -1, NULL);
+	// redraw palette
+	DrawColorPalette();
+	PaintColorSwatches();
 
 }
 
@@ -350,7 +349,6 @@ void ColorPicker::DrawColorPalette(){
 	::DeleteObject(hbrush);
 
 	// swatches
-	bool found = false;
 	for (int row = 0; row < 14; row++) {
 		
 		rc.top = base_y + 12*row;
@@ -365,11 +363,11 @@ void ColorPicker::DrawColorPalette(){
 			::FillRect(hdc, &rc, hbrush);
 			::DeleteObject(hbrush);
 
-			if (!found && color == _old_color) {
+			if (!_old_color_found_in_palette && color == _old_color) {
 				_old_color_index = index;
 				_old_color_row = row;
 				if(row>2 || index>4)
-					found = true;
+					_old_color_found_in_palette = true;
 			}
 
 			rc.left += 12;
@@ -382,7 +380,7 @@ void ColorPicker::DrawColorPalette(){
 	::ReleaseDC(_color_popup, hdc);
 
 	// mark current color
-	if (_old_color_row!=-1 && _old_color_index!=-1)
+	if (_old_color_found_in_palette)
 		DrawColorHoverBox(_old_color_row, _old_color_index, true);
 
 }
@@ -690,9 +688,6 @@ void ColorPicker::FillRecentColorData(){
 	for(int i = 0; i < 5 ; i++){
 		_color_palette_data[0][i] = _recent_color_data[i];
 		_color_palette_data[1][i] = _recent_color_data[i+5];
-		int id = 14*i;
-		::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETITEMDATA , id, (LPARAM)_color_palette_data[0][i]);
-		::SendDlgItemMessage(_color_popup, IDC_COLOR_PALETTE, LB_SETITEMDATA , id+1, (LPARAM)_color_palette_data[1][i]);
 	}
 
 }
