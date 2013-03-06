@@ -24,8 +24,8 @@ ColorPicker::ColorPicker(COLORREF color) {
 
 	_pick_cursor = NULL;
 
-	_current_color_found_in_palette = false;
-	_current_color = color;
+	_old_color_found_in_palette = false;
+	_old_color = color;
 	_new_color = 0;
 	
 	_is_inside_palette = false;
@@ -64,7 +64,7 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 
 	_is_first_create = true;
 
-	_color_popup = ::CreateDialogParam(_instance, MAKEINTRESOURCE(IDD_COLOR_PICKER_POPUP), _parent_window, (DLGPROC)ColorPopupWINPROC, (LPARAM)this);
+	_color_popup = ::CreateDialogParam(_instance, MAKEINTRESOURCE(IDD_COLOR_PICKER_POPUP), _parent_window, (DLGPROC)ColorPopupWinproc, (LPARAM)this);
 	
 	if (message_window == NULL) {
 		_message_window = _parent_window;
@@ -85,8 +85,8 @@ void ColorPicker::Color(COLORREF color, bool is_rgb) {
 		color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
 	}
 	
-	_current_color = color;
-	_current_color_found_in_palette = false;
+	_old_color = color;
+	_old_color_found_in_palette = false;
 
 	DisplayNewColor(color);
 
@@ -191,7 +191,7 @@ void ColorPicker::Hide() {
 
 }
 
-BOOL CALLBACK ColorPicker::ColorPopupWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+BOOL CALLBACK ColorPicker::ColorPopupWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
 		case WM_INITDIALOG:
@@ -365,7 +365,7 @@ void ColorPicker::DrawColorPalette(){
 			::FillRect(hdc, &rc, hbrush);
 			::DeleteObject(hbrush);
 
-			if (!found && color == _current_color) {
+			if (!found && color == _old_color) {
 				_old_color_index = index;
 				_old_color_row = row;
 				if(row>2 || index>4)
@@ -442,7 +442,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 			_previous_index = -1;
 		}
 
-		DisplayNewColor(_current_color);
+		DisplayNewColor(_old_color);
 
 	}
 
@@ -482,11 +482,11 @@ BOOL ColorPicker::OnMouseClick(LPARAM lparam){
 
 	if (PointInRect(p, _rect_palette)) {
 
-		_current_color = _new_color;
+		_old_color = _new_color;
 
 		PutRecentColor(_new_color);
 
-		::SendMessage(_message_window, WM_QCP_PICK, _current_color, 0);
+		::SendMessage(_message_window, WM_QCP_PICK, _old_color, 0);
 
 	}
 
@@ -513,7 +513,7 @@ void ColorPicker::StartPickScreenColor(){
 		_pScreenPicker->Create(_instance, _color_popup);
 	}
 
-	_pScreenPicker->Color(_current_color);
+	_pScreenPicker->Color(_old_color);
 	_pScreenPicker->Start();
 
 }
@@ -550,7 +550,7 @@ void ColorPicker::ShowColorChooser(){
 	cc.lStructSize = sizeof(cc);
 	cc.hwndOwner = _color_popup;
 	cc.lpCustColors = (LPDWORD)custom_colors;
-	cc.rgbResult = _current_color;
+	cc.rgbResult = _old_color;
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT | CC_ENABLEHOOK;
 	cc.lpfnHook = (LPCCHOOKPROC)ColorChooserWINPROC;
 
@@ -637,7 +637,7 @@ void ColorPicker::PaintColorSwatches() {
 	rc.top = 187;
 	rc.right = 233+24;
 	rc.bottom = 187+22;
-	brush = ::CreateSolidBrush(_current_color);
+	brush = ::CreateSolidBrush(_old_color);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 

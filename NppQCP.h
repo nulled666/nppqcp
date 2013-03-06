@@ -2,6 +2,7 @@
 #ifndef PLUGINDEFINITION_H
 #define PLUGINDEFINITION_H
 
+
 #include "PluginInterface.h"
 
 const TCHAR NPP_PLUGIN_NAME[] = TEXT("Quick Color Picker +");
@@ -9,7 +10,9 @@ const TCHAR NPP_PLUGIN_VER[] = TEXT("1.0");
 
 const int _command_count = 3;
 
-void PluginInit(HANDLE module);
+void AttachDll(HANDLE module);
+
+void PluginInit();
 void PluginCleanUp();
 
 
@@ -29,7 +32,11 @@ HWND GetScintilla();
 
 void CreateMessageWindow();
 void DestroyMessageWindow();
-LRESULT CALLBACK MessageWindowWINPROC(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK MessageWindowWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+void AddNppSubclass();
+void RemoveNppSubclass();
+LRESULT CALLBACK NppSubclassProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 void CreateColorPicker();
 bool ShowColorPicker();
