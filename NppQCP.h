@@ -47,8 +47,7 @@ void ToggleColorPicker();
 bool CheckForHexColor(const HWND h_scintilla, const int start, const int end);
 bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end);
 
-void WriteHexColor(COLORREF color);
-void WriteRgbColor(COLORREF color);
+void WriteColor(COLORREF color);
 
 void LoadRecentColor();
 void SaveRecentColor();

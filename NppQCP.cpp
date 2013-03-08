@@ -36,6 +36,11 @@ HWND _message_window;
 
 bool _enable_qcp = false;
 bool _is_color_picker_shown = false;
+
+bool _rgb_selected = false;
+int _rgb_start = -1;
+int _rgb_end = -1;
+
 int _last_select_start = -1;
 int _last_select_end = -1;
 
@@ -225,7 +230,7 @@ LRESULT CALLBACK MessageWindowWinproc(HWND hwnd, UINT message, WPARAM wparam, LP
 		case WM_QCP_PICK:
 		{
 			::SetActiveWindow(nppData._nppHandle);
-			WriteHexColor((COLORREF)wparam);
+			WriteColor((COLORREF)wparam);
 			break;
 		}
 		case WM_QCP_CANCEL:
@@ -330,10 +335,12 @@ bool ShowColorPicker(){
 	_last_select_start = selection_start;
 	_last_select_start = selection_end;
 
+	_rgb_selected = false;
 	bool result = CheckForHexColor(h_scintilla, selection_start, selection_end);
 
 	if(!result){
 		result = CheckForRgbColor(h_scintilla, selection_start, selection_end);
+		_rgb_selected = result;
 	}
 
 	if(!result)
@@ -434,7 +441,7 @@ bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
 	if(close_pos == -1)
 		return false;
 
-	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[^)]*\\))";
+	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ )]|,[0-9. ]+\\))";
 	::SendMessage(h_scintilla, SCI_SETTARGETSTART, start, 0);
 	::SendMessage(h_scintilla, SCI_SETTARGETEND, close_pos+1, 0);
 	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
@@ -460,6 +467,10 @@ bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
 
 	// passed -
 	COLORREF color = RGB(ir, ig, ib);
+
+	// prepare seletion range for replacement
+	_rgb_start = end + 1;
+	_rgb_end = close_pos;
 
 	// create the color picker if not created
 	if (!_pColorPicker)
@@ -500,20 +511,26 @@ void ToggleColorPicker(){
 }
 
 
-void WriteHexColor(COLORREF color) {
+void WriteColor(COLORREF color) {
 
 	// convert to rgb color
 	color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
-	// Replace with new hex color string
-	// SCI_REPLACESEL only accept char*
-	char buff[10];
-	sprintf(buff, "%0*X", 6, color);
-		
-	HWND current_scintilla = GetScintilla();
-	::SendMessage(current_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
+	HWND h_scintilla = GetScintilla();
 
-	::SetActiveWindow(current_scintilla);
+	char buff[100];
+
+	if(_rgb_selected){
+		sprintf(buff, "%d, %d, %d", GetRValue(color), GetGValue(color), GetBValue(color));
+		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _rgb_start, 0);
+		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _rgb_end, 0);
+	}else{
+		sprintf(buff, "%0*X", 6, color);
+	}
+		
+	::SendMessage(h_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
+
+	::SetActiveWindow(h_scintilla);
 
 	SaveRecentColor();
 
