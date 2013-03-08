@@ -16,6 +16,8 @@
 
 ColorPicker::ColorPicker(COLORREF color) {
 	
+	focus_on_show = true;
+
 	_instance = NULL;
 	_parent_window = NULL;
 	_color_popup = NULL;
@@ -188,13 +190,18 @@ void ColorPicker::PlaceWindow(const HWND hwnd, const RECT rc) {
 		y = rc.bottom;
 	}
 
-	::SetWindowPos(hwnd, HWND_TOP, x, y, 0, 0, SWP_HIDEWINDOW|SWP_NOSIZE|SWP_NOZORDER);
+	::SetWindowPos(hwnd, HWND_TOP, x, y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 
 }
 
 void ColorPicker::Show() {
 
-	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOMOVE|SWP_NOSIZE);
+	int flags = SWP_SHOWWINDOW|SWP_NOMOVE|SWP_NOSIZE;
+	if (!focus_on_show)	{
+		flags = flags | SWP_NOACTIVATE;
+	}
+
+	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, 0, 0, flags);
 
 	DrawColorPalette();
 	PaintColorSwatches();
@@ -319,7 +326,7 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 void ColorPicker::OnInitDialog(){
 
 	// set size
-	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, POPUP_WIDTH, POPUP_HEIGHT, SWP_HIDEWINDOW|SWP_NOMOVE);
+	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, POPUP_WIDTH, POPUP_HEIGHT, SWP_HIDEWINDOW|SWP_NOMOVE|SWP_NOACTIVATE);
 
 	// place window
 	::GetWindowRect(_color_popup, &_parent_rc);

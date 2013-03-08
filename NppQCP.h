@@ -39,10 +39,15 @@ void RemoveNppSubclass();
 LRESULT CALLBACK NppSubclassProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 void CreateColorPicker();
+
 bool ShowColorPicker();
 void HideColorPicker();
 void ToggleColorPicker();
-void WriteColorCodeToEditor(COLORREF color);
+
+bool CheckForHexColor(HWND h_scintilla, int start, int end);
+
+void WriteHexColor(COLORREF color);
+void WriteRgbColor(COLORREF color);
 
 void LoadRecentColor();
 void SaveRecentColor();

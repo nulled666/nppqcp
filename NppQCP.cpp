@@ -225,7 +225,7 @@ LRESULT CALLBACK MessageWindowWinproc(HWND hwnd, UINT message, WPARAM wparam, LP
 		case WM_QCP_PICK:
 		{
 			::SetActiveWindow(nppData._nppHandle);
-			WriteColorCodeToEditor((COLORREF)wparam);
+			WriteHexColor((COLORREF)wparam);
 			break;
 		}
 		case WM_QCP_CANCEL:
@@ -305,11 +305,10 @@ LRESULT CALLBACK NppSubclassProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM 
 void CreateColorPicker(){
 
 	_pColorPicker = new ColorPicker();
+	_pColorPicker->focus_on_show = false;
 	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
 
 	LoadRecentColor();
-
-	::SetActiveWindow(nppData._nppHandle);
 
 }
 
@@ -331,42 +330,11 @@ bool ShowColorPicker(){
 	_last_select_start = selection_start;
 	_last_select_start = selection_end;
 
-	int len = selection_end - selection_start;
+	bool result = CheckForHexColor(h_scintilla, selection_start, selection_end);
 
-	// break - wrong length
-	if (len != 3 && len != 6)
+	if(!result)
 		return false;
 
-	char mark = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, selection_start - 1, 0);
-	// break - no # mark
-	if (mark == 0 || mark != '#')
-		return false;
-
-	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, selection_end, 0);
-	// break - next char is still hex char
-	if (strchr("01234567890abcdefABCDEF", next_char) != NULL)
-		return false;
-
-	// passed -
-
-	// create the color picker if not created
-	if (!_pColorPicker)
-		CreateColorPicker();
-
-	// get hex text - scintilla only accept char
-	char hex_str[10];
-    ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&hex_str);
-
-	wchar_t hex_color[20];
-
-	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_str));
-
-	// put current color to picker
-	if (!_pColorPicker->SetHexColor(hex_color)) {
-		// not a valid hex color string
-		return false;
-	}
-	
 	// prepare coordinates
 	POINT p;
 	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION , 0, selection_start);
@@ -386,8 +354,48 @@ bool ShowColorPicker(){
 	// set and show
 	_pColorPicker->Show();
 
-	// set the focus back to editor - don't break the keyboard action chain
-	::SetActiveWindow(nppData._nppHandle);
+	return true;
+
+}
+
+
+bool CheckForHexColor(HWND h_scintilla, int start, int end){
+	
+	int len = end - start;
+
+	// break - wrong length
+	if (len != 3 && len != 6)
+		return false;
+
+	char mark = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, start - 1, 0);
+	// break - no # mark
+	if (mark == 0 || mark != '#')
+		return false;
+
+	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
+	// break - next char is still hex char
+	if (strchr("01234567890abcdefABCDEF", next_char) != NULL)
+		return false;
+
+	// passed -
+
+	// create the color picker if not created
+	if (!_pColorPicker)
+		CreateColorPicker();
+
+	// get hex text - scintilla only accept char
+	char hex_str[10];
+    ::SendMessage(h_scintilla, SCI_GETSELTEXT, 0, (LPARAM)&hex_str);
+
+	wchar_t hex_color[20];
+
+	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_str));
+
+	// put current color to picker
+	if (!_pColorPicker->SetHexColor(hex_color)) {
+		// not a valid hex color string
+		return false;
+	}
 
 	return true;
 
@@ -422,7 +430,7 @@ void ToggleColorPicker(){
 }
 
 
-void WriteColorCodeToEditor(COLORREF color) {
+void WriteHexColor(COLORREF color) {
 
 	// convert to rgb color
 	color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
