@@ -315,6 +315,8 @@ void CreateColorPicker(){
 
 	LoadRecentColor();
 
+	::SetActiveWindow(nppData._nppHandle);
+
 }
 
 bool ShowColorPicker(){
