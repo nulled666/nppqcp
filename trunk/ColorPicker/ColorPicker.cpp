@@ -206,6 +206,8 @@ void ColorPicker::Show() {
 	DrawColorPalette();
 	PaintColorSwatches();
 
+	DisplayNewColor(_old_color);
+
 }
 
 void ColorPicker::Hide() {
