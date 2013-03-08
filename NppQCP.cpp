@@ -22,7 +22,7 @@ bool doCloseTag;
 
 
 #define NPP_SUBCLASS_ID 101
-#define MAX_COLOR_CODE_HIGHTLIGHT 100
+#define MAX_COLOR_CODE_HIGHTLIGHT 50
 
 const wchar_t _ini_section[] = L"nppqcp";
 const wchar_t _ini_key[] = L"enabled";
@@ -503,17 +503,26 @@ void HighlightColorCode() {
     int first_visible_line = ::SendMessage(h_scintilla, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int last_line = first_visible_line + (int)::SendMessage(h_scintilla, SCI_LINESONSCREEN, 0, 0);
 
+	first_visible_line = first_visible_line - 1; // i don't know why
+
     int start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
 	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
-    int match_count = 0;
+	HighlightHexColor(h_scintilla, start_position, end_position);
+	HighlightRgbColor(h_scintilla, start_position, end_position);
 
-    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT) {
+}
 
-		// well - (?:) has no effect on scintilla's target end
+void HighlightHexColor(const HWND h_scintilla, const int start_position, const int end_position){
+
+	int match_count = 0;
+	int search_start = start_position;
+
+    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
+
 		char regexp[] = "(?:#)([0-9abcdefABCDEF]{3,6})(?:[^0-9abcdefABCDEF])";
 
-		::SendMessage(h_scintilla, SCI_SETTARGETSTART, start_position, 0);
+		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
 		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
 		::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
         ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
@@ -534,7 +543,7 @@ void HighlightColorCode() {
 
 		// invalid hex color length
         if (target_length !=3 && target_length != 6) {
-			start_position = target_end; // move on
+			search_start = target_end; // move on
             continue;
         }
 
@@ -553,19 +562,81 @@ void HighlightColorCode() {
 		COLORREF color = strtol(hex_color, NULL, 16);
 		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
-		HighlightCode(h_scintilla, color, target_start, target_end - target_start);
+		bool can_proceed = HighlightCode(h_scintilla, color, target_start, target_end);
 
-		start_position = target_end; // move on
+		// exceeded the indicator count
+		if(!can_proceed)
+			break;
+
+		search_start = target_end; // move on
         match_count++;
 
     }
 
 }
 
-void HighlightCode(const HWND h_scintilla, const COLORREF color, const int start, int length){
+void HighlightRgbColor(const HWND h_scintilla, const int start_position, const int end_position){
+
+	int match_count = 0;
+	int search_start = start_position;
+
+    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
+
+		char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[^)]*\\))";
+
+		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
+		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
+		::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
+        ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
+		int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
+
+		// not found
+		if(target_pos == -1) {
+			break;
+		}
+
+		char r[6], g[6], b[6];
+		::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&r);
+		::SendMessage(h_scintilla, SCI_GETTAG, 2, (LPARAM)&g);
+		::SendMessage(h_scintilla, SCI_GETTAG, 3, (LPARAM)&b);
+
+		int ir = strtol(r, NULL, 10);
+		int ig = strtol(g, NULL, 10);
+		int ib = strtol(b, NULL, 10);
+
+        int target_start = target_pos;
+        int target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
+        int target_length = target_end - target_start;
+
+		// invalid color value
+		if(ir>255 || ig>255 || ib>255){
+			search_start = target_end; // move on
+			continue;
+		}
+
+        // parse hex color string to COLORREF
+		COLORREF color = RGB(ir, ig, ib);
+
+		bool can_proceed = HighlightCode(h_scintilla, color, target_start, target_end);
+
+		// exceeded the indicator count
+		if(!can_proceed)
+			break;
+
+		search_start = target_end; // move on
+        match_count++;
+
+    }
+
+}
+
+
+bool HighlightCode(const HWND h_scintilla, const COLORREF color, const int start, int end){
 
 	if(_indicator_count > INDIC_MAX)
-		return;
+		return false;
+
+	int length = end - start;
 
 	// mark text with indicateors
     int indicator_id = -1;
@@ -599,6 +670,8 @@ void HighlightCode(const HWND h_scintilla, const COLORREF color, const int start
     ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
     ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, start, length);
 
+	return true;
+
 }
 
 void RemoveColorHighlight() {
@@ -608,7 +681,7 @@ void RemoveColorHighlight() {
     int length = ::SendMessage(h_scintilla, SCI_GETTEXT, 0, 0);
     int i = INDIC_CONTAINER;
     while (i <= _indicator_count) {
-		_indicator_colors[i] = 0;
+		_indicator_colors[i] = -1;
         ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, i, 0);
         ::SendMessage(h_scintilla, SCI_INDICATORCLEARRANGE, 0, length);
         i++;
