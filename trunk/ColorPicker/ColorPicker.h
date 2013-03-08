@@ -39,6 +39,8 @@ class ColorPicker {
 		ColorPicker(COLORREF color = 0);
 		~ColorPicker();
 
+		bool focus_on_show;
+
 		void Create(HINSTANCE instance, HWND parent, HWND message_window = NULL);
 		void Destroy();
   
