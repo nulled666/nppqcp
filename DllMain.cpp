@@ -61,8 +61,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 				HighlightColorCode();
 			}
 			if (notifyCode->updated & SC_UPDATE_SELECTION ) {
-				ToggleColorPicker();
+				if (!HasSelection())
+					HideColorPicker();
 			}
+			break;
+		}
+		case SCN_DOUBLECLICK:
+		{
+			ShowColorPicker();
 			break;
 		}
 		case SCN_ZOOM:

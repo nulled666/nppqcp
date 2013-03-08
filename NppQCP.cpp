@@ -11,8 +11,10 @@
 #include <time.h>
 #include <shlwapi.h>
 #include <commctrl.h>
+#include <winver.h>
 
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "version.lib")
 
 // The data of Notepad++ that you can use in your plugin commands
 // extern variables - don't change the name
@@ -40,9 +42,6 @@ bool _is_color_picker_shown = false;
 bool _rgb_selected = false;
 int _rgb_start = -1;
 int _rgb_end = -1;
-
-int _last_select_start = -1;
-int _last_select_end = -1;
 
 
 // color code highlight /////////////////////////////////////
@@ -126,12 +125,37 @@ void InitCommandMenu() {
     //            );
 
 	setCommand(0, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
-
 	setCommand(1, L"---", NULL, NULL, false);
 
+	// get version
+	WCHAR fileName[_MAX_PATH];
+	DWORD size = GetModuleFileName(_instance, fileName, _MAX_PATH);
+	fileName[size] = NULL;
+	DWORD handle = 0;
+	size = GetFileVersionInfoSize(fileName, &handle);
+	BYTE* versionInfo = new BYTE[size];
+	wchar_t version[50];
+
+	if (!GetFileVersionInfo(fileName, handle, size, versionInfo)) {
+		delete[] versionInfo;
+		lstrcpy(version, L"Unknown");
+	}
+
+	UINT    			len = 0;
+	VS_FIXEDFILEINFO*   vsfi = NULL;
+	VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
+	wsprintf(version, L"%d.%d.%d.%d",
+		HIWORD(vsfi->dwFileVersionMS),
+		LOWORD(vsfi->dwFileVersionMS),
+		HIWORD(vsfi->dwFileVersionLS),
+		LOWORD(vsfi->dwFileVersionLS)
+	);
+	delete[] versionInfo;
+
+	// create visit website link
 	wchar_t text[200] = L"Visit Website ";
 	wcscat(text, L" (Version ");
-	wcscat(text, NPP_PLUGIN_VER);
+	wcscat(text, version);
 	wcscat(text, L")");
 	setCommand(2, text, VisitWebsite, NULL, FALSE);
 
@@ -330,12 +354,9 @@ bool ShowColorPicker(){
 	int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
 	int selection_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
 
-	// if this selection hasn't changed
-	if(_last_select_start == selection_start && _last_select_start == selection_end)
+	// nothing selected
+	if(selection_start==selection_end)
 		return false;
-
-	_last_select_start = selection_start;
-	_last_select_start = selection_end;
 
 	_rgb_selected = false;
 	bool result = CheckForHexColor(h_scintilla, selection_start, selection_end);
@@ -500,16 +521,16 @@ void HideColorPicker() {
 }
 
 
-void ToggleColorPicker(){
+bool HasSelection(){
 
-	if (!_pColorPicker)
-		CreateColorPicker();
+	HWND h_scintilla = GetScintilla();
+	int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
+	int selection_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
 
-	if (!_pColorPicker->IsVisible()) {
-		ShowColorPicker();
-	} else {
-		HideColorPicker();
-	}
+	if(selection_start==selection_end)
+		return false;
+
+	return true;
 
 }
 
