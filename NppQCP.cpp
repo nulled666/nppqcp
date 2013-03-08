@@ -548,7 +548,8 @@ void HighlightColorCode() {
 
     while ( match_count < MAX_COLOR_CODE_HIGHTLIGHT && indicator_count <= INDIC_MAX) {
 
-		char regexp[] = "#[0-9abcdefABCDEF]{3,6}([^0-9abcdefABCDEF])";
+		// well - (?:) has no effect on scintilla's target end
+		char regexp[] = "(?:#)([0-9abcdefABCDEF]{3,6})(?:[^0-9abcdefABCDEF])";
 
 		::SendMessage(h_scintilla, SCI_SETTARGETSTART, start_position, 0);
 		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
@@ -561,12 +562,13 @@ void HighlightColorCode() {
 			break;
 		}
 
-		// remove beginning '#'
-        int target_start = target_pos + 1;
-		// remove trailing match
-        int target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND , 0, 0) - 1;
+		char hex_color[8];
+		::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&hex_color);
 
-        int target_length = target_end - target_start;
+        int target_length = strlen(hex_color);
+        int target_start = target_pos;
+        int target_end = target_pos + target_length + 1; // don't forget the '#'
+
 
 		// invalid hex color length
         if (target_length !=3 && target_length != 6) {
@@ -574,36 +576,19 @@ void HighlightColorCode() {
             continue;
         }
 
-		// get text
-        char hex[8];
-		Sci_CharacterRange char_range;
-		char_range.cpMin = target_start;
-		char_range.cpMax = target_end;
-
-		Sci_TextRange text_range;
-		text_range.chrg = char_range;
-		text_range.lpstrText = hex;
-
-		int len = ::SendMessage(h_scintilla, SCI_GETTEXTRANGE , 0, (LPARAM)&text_range);
-
-		if(len != target_length){
-			// should be an exception
-			throw std::runtime_error("Invalid text length on SCI_GETTEXTRANGE.");
-		}
-
 		// pad 3 char hex string
         if (target_length == 3) {
-			hex[6] = '\0';
-            hex[5] = hex[2];
-            hex[4] = hex[2];
-            hex[3] = hex[1];
-            hex[2] = hex[1];
-            hex[1] = hex[0];
-            hex[0] = hex[0];
+			hex_color[6] = '\0';
+            hex_color[5] = hex_color[2];
+            hex_color[4] = hex_color[2];
+            hex_color[3] = hex_color[1];
+            hex_color[2] = hex_color[1];
+            hex_color[1] = hex_color[0];
+            hex_color[0] = hex_color[0];
         }
 
         // parse hex color string to COLORREF
-		COLORREF color = strtol(hex, NULL, 16);
+		COLORREF color = strtol(hex_color, NULL, 16);
 		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
 		// mark text with indicateors
@@ -611,7 +596,7 @@ void HighlightColorCode() {
         
         char search[10];
         strcpy(search, "|");
-        strcat(search, hex);
+        strcat(search, hex_color);
 
         if (strstr(color_list, search)) {
 
@@ -642,7 +627,7 @@ void HighlightColorCode() {
 
 		// set indicator
         ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
-        ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, target_start-1, target_length+1);
+        ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, target_start, target_length+1);
 
 		start_position = target_end; // move on
         match_count++;
