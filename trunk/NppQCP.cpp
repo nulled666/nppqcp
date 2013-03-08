@@ -22,6 +22,7 @@ bool doCloseTag;
 
 
 #define NPP_SUBCLASS_ID 101
+#define MAX_COLOR_CODE_HIGHTLIGHT 100
 
 const wchar_t _ini_section[] = L"nppqcp";
 const wchar_t _ini_key[] = L"enabled";
@@ -532,132 +533,121 @@ void HighlightColorCode() {
 
     HWND h_scintilla = GetScintilla();
 
-    int save_caret_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
-    int save_caret_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
-
     //SCI_GETFIRSTVISIBLELINE first line is 0
     int first_visible_line = ::SendMessage(h_scintilla, SCI_GETFIRSTVISIBLELINE, 0, 0);
-    
-    int first_line_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
-    ::SendMessage(h_scintilla, SCI_SETANCHOR, first_line_position, 0);
-    ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
+	int last_line = first_visible_line + (int)::SendMessage(h_scintilla, SCI_LINESONSCREEN, 0, 0);
 
+    int start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
+	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
-    char found[9999];
-    strcpy(found, "");
+	// search list - can't be large than this
+	char color_list[9*INDIC_MAX] = "";
 
-    int i = 1;
-    int indicator;
+    int match_count = 0;
+    int indicator_count = INDIC_CONTAINER;
 
-    int set_colors = 0;
+    while ( match_count < MAX_COLOR_CODE_HIGHTLIGHT && indicator_count <= INDIC_MAX) {
 
+		char regexp[] = "#[0-9abcdefABCDEF]{3,6}([^0-9abcdefABCDEF])";
 
-    while (i <= 20)
-    {
+		::SendMessage(h_scintilla, SCI_SETTARGETSTART, start_position, 0);
+		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
+		::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
         ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
-		::SendMessage(h_scintilla, SCI_SEARCHNEXT, SCFIND_REGEXP, (LPARAM)"#[0-9AaBbCcDdEeFf]{3,6}");
+		int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
 
-        int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
-        int selection_end   = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND , 0, 0);
+		// not found
+		if(target_pos == -1) {
+			break;
+		}
 
-        int selection_length = selection_end - selection_start;
+		// remove beginning '#'
+        int target_start = target_pos + 1;
+		// remove trailing match
+        int target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND , 0, 0) - 1;
 
-        if (selection_start == selection_end)
-        {
-            break;
-        }
-        else if (selection_length > 0 && selection_length != 4 && selection_length != 7)
-        {
-            ::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, selection_end, 0);
-            ::SendMessage(h_scintilla, SCI_SETSELECTIONEND, selection_end, 0);
+        int target_length = target_end - target_start;
 
-            ::SendMessage(h_scintilla, SCI_SETANCHOR, selection_end, 0);
-            //i++;
+		// invalid hex color length
+        if (target_length !=3 && target_length != 6) {
+			start_position = target_end; // move on
             continue;
         }
 
-        int hex_length;
+		// get text
+        char hex[8];
+		Sci_CharacterRange char_range;
+		char_range.cpMin = target_start;
+		char_range.cpMax = target_end;
 
-        char selection[8];
-        ::SendMessage(h_scintilla, SCI_GETSELTEXT , 0, (LPARAM)&selection);
-		selection[7] = '\0';
+		Sci_TextRange text_range;
+		text_range.chrg = char_range;
+		text_range.lpstrText = hex;
 
-        ::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, selection_end, 0);
-        ::SendMessage(h_scintilla, SCI_SETSELECTIONEND, selection_end, 0);
+		int len = ::SendMessage(h_scintilla, SCI_GETTEXTRANGE , 0, (LPARAM)&text_range);
 
-        ::SendMessage(h_scintilla, SCI_SETANCHOR, selection_end, 0);
+		if(len != target_length){
+			// should be an exception
+			throw std::runtime_error("Invalid text length on SCI_GETTEXTRANGE.");
+		}
 
-        char hex[7];
-        strcpy(hex, substr(selection, 1, strlen(selection)));
-
-        if (strlen(hex) == 3)
-        {
-            hex[0] = selection[1];
-            hex[1] = selection[1];
-            hex[2] = selection[2];
-            hex[3] = selection[2];
-            hex[4] = selection[3];
-            hex[5] = selection[3];
+		// pad 3 char hex string
+        if (target_length == 3) {
 			hex[6] = '\0';
-
-            hex_length = 3;
+            hex[5] = hex[2];
+            hex[4] = hex[2];
+            hex[3] = hex[1];
+            hex[2] = hex[1];
+            hex[1] = hex[0];
+            hex[0] = hex[0];
         }
-        else {
-            hex_length = 6;
-        }
 
-        // Reverse RGB to BGR which Scintilla uses
-		char reverse[7];
-		
-        reverse[0] = toupper(hex[4]);
-        reverse[1] = toupper(hex[5]);
-        reverse[2] = toupper(hex[2]);
-        reverse[3] = toupper(hex[3]);
-        reverse[4] = toupper(hex[0]);
-        reverse[5] = toupper(hex[1]);
-		reverse[6] = '\0';
+        // parse hex color string to COLORREF
+		COLORREF color = strtol(hex, NULL, 16);
+		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
-        indicator = i;
+		// mark text with indicateors
+        int indicator_id = INDIC_CONTAINER;
         
-        char search[9];
+        char search[10];
         strcpy(search, "|");
-        strcat(search, reverse);
+        strcat(search, hex);
 
-		COLORREF color = strtol(reverse, NULL, 16);
+        if (strstr(color_list, search)) {
 
-        if (strstr(found, search)) {
-            i--;
-            int j = 0;
-            while (j <= set_colors) {
-                if (color == ::SendMessage(h_scintilla, SCI_INDICGETFORE, j, 0))
-                {
-                    indicator = j;
+			// if the indicator of the same color already exists
+			int index = INDIC_CONTAINER;
+            while (index <= indicator_count) {
+                if (color == ::SendMessage(h_scintilla, SCI_INDICGETFORE, index, 0)) {
+                    indicator_id = index;
                     break;
                 }
-                else {
-                    j++;
-                }
+                index++;
             }
+
+        } else {
+
+			// create new indicator
+			indicator_id = indicator_count;
+
+			::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_PLAIN);
+			::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator_id, (LPARAM)true);
+			::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator_id, (LPARAM)color);
+			::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator_id, (LPARAM)255);
+
+            strcat(color_list, search);
+            indicator_count++;
+
         }
-        else {
-            strcat(found, search);
-            set_colors++;
-        }
 
-        ::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator, INDIC_PLAIN);
+		// set indicator
+        ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
+        ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, target_start-1, target_length+1);
 
-        ::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator, (LPARAM)true);
-        ::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator, (LPARAM)color);
-        ::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator, (LPARAM)255);
+		start_position = target_end; // move on
+        match_count++;
 
-        ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator, 0);
-        ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, selection_start, hex_length +1);
-
-        i++;
     }
-
-    ::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, save_caret_start, 0);
-    ::SendMessage(h_scintilla, SCI_SETSELECTIONEND, save_caret_end, 0);
 
 }
 
@@ -666,8 +656,8 @@ void RemoveColorHighlight() {
     HWND h_scintilla = GetScintilla();
     
     int length = ::SendMessage(h_scintilla, SCI_GETTEXT, 0, 0);
-    int i = 1;
-    while (i <= 20) {
+    int i = INDIC_CONTAINER;
+    while (i <= INDIC_MAX) {
         ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, i, 0);
         ::SendMessage(h_scintilla, SCI_INDICATORCLEARRANGE, 0, length);
         i++;
@@ -675,15 +665,3 @@ void RemoveColorHighlight() {
 
 }
 
-char* substr(char* string, int begin, int end) {
-
-    char* temp = (char*)malloc(sizeof(char)*(end-begin+1));
-
-    if (temp != NULL) {
-        strncpy(temp, string+begin, end-begin+1);
-        temp[end-begin+1] = '\0';
-    }
-
-    return temp;
-
-}
