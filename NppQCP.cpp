@@ -474,45 +474,6 @@ void SaveRecentColor(){
 }
 
 
-bool is_hex(char* str)
-{
-	char copy_of_param [64];
-	
-	return (
-		strtok ( strcpy(copy_of_param, str), "0123456789ABCDEFabcdef" ) == NULL
-	);
-}
-
-bool pad_hex(char* out, const char* in) {
-
-	if (strlen(in) != 3){
-		return false;
-	}
-
-	// the stupid and fast way
-	out[0] = in[0];
-    out[1] = in[0];
-    out[2] = in[1];
-    out[3] = in[1];
-    out[4] = in[2];
-    out[5] = in[2];
-	out[6] = '\0';
-
-	return true;
-
-}
-
-COLORREF revert_color_order(COLORREF color) {
-	return RGB(GetBValue(color),GetGValue(color),GetRValue(color));
-}
-
-
-COLORREF hex2color(char* str) {
-	COLORREF color = (COLORREF)strtol(str, NULL, 16);
-	return revert_color_order(color);
-}
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // highlight hex color
