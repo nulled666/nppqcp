@@ -332,6 +332,10 @@ bool ShowColorPicker(){
 
 	bool result = CheckForHexColor(h_scintilla, selection_start, selection_end);
 
+	if(!result){
+		result = CheckForRgbColor(h_scintilla, selection_start, selection_end);
+	}
+
 	if(!result)
 		return false;
 
@@ -359,17 +363,17 @@ bool ShowColorPicker(){
 }
 
 
-bool CheckForHexColor(HWND h_scintilla, int start, int end){
+bool CheckForHexColor(const HWND h_scintilla, const int start, const int end){
 	
 	int len = end - start;
 
-	// break - wrong length
+	// break - wrong length: fc6 ffcc66
 	if (len != 3 && len != 6)
 		return false;
 
-	char mark = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, start - 1, 0);
+	char prev_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, start - 1, 0);
 	// break - no # mark
-	if (mark == 0 || mark != '#')
+	if (prev_char == 0 || prev_char != '#')
 		return false;
 
 	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
@@ -401,6 +405,72 @@ bool CheckForHexColor(HWND h_scintilla, int start, int end){
 
 }
 
+bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
+	
+	int len = end - start;
+
+	// break - wrong length: rgb rgba
+	if (len != 3 && len != 4)
+		return false;
+
+	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
+
+	// break - next char should be the open bracket
+	if (next_char != '(')
+		return false;
+
+	int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, end, 0);
+	int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, line, 0);
+
+	// get first close bracket position
+	char close_bracket[] = ")";
+	::SendMessage(h_scintilla, SCI_SETTARGETSTART, end, 0);
+	::SendMessage(h_scintilla, SCI_SETTARGETEND, line_end, 0);
+	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, 0, 0);
+    ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
+	int close_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(close_bracket), (LPARAM)close_bracket);
+
+	// no close bracket
+	if(close_pos == -1)
+		return false;
+
+	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[^)]*\\))";
+	::SendMessage(h_scintilla, SCI_SETTARGETSTART, start, 0);
+	::SendMessage(h_scintilla, SCI_SETTARGETEND, close_pos+1, 0);
+	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
+    ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
+	int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
+
+	// no match
+	if(target_pos == -1)
+		return false;
+
+	char r[6], g[6], b[6];
+	::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&r);
+	::SendMessage(h_scintilla, SCI_GETTAG, 2, (LPARAM)&g);
+	::SendMessage(h_scintilla, SCI_GETTAG, 3, (LPARAM)&b);
+
+	int ir = strtol(r, NULL, 10);
+	int ig = strtol(g, NULL, 10);
+	int ib = strtol(b, NULL, 10);
+
+	// invalid color value
+	if(ir>255 || ig>255 || ib>255)
+		return false;
+
+	// passed -
+	COLORREF color = RGB(ir, ig, ib);
+
+	// create the color picker if not created
+	if (!_pColorPicker)
+		CreateColorPicker();
+
+	// put current color to picker
+	_pColorPicker->Color(color);
+
+	return true;
+
+}
 
 // hide the palette
 void HideColorPicker() {
