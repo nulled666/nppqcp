@@ -29,7 +29,7 @@ const wchar_t _ini_key[] = L"enabled";
 const wchar_t _ini_file[] = L"nppqcp.ini";
 TCHAR _ini_file_path[MAX_PATH];
 
-
+// color picker /////////////////////////////////////////////
 ColorPicker* _pColorPicker = NULL;
 HINSTANCE _instance;
 HWND _message_window;
@@ -39,6 +39,11 @@ bool _is_color_picker_shown = false;
 int _last_select_start = -1;
 int _last_select_end = -1;
 
+
+// color code highlight /////////////////////////////////////
+// search list - can't be large than max indicator count
+int _indicator_count = INDIC_CONTAINER;
+COLORREF _indicator_colors[INDIC_MAX+1];
 
 void AttachDll(HANDLE module) {
 
@@ -501,13 +506,9 @@ void HighlightColorCode() {
     int start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
 	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
-	// search list - can't be large than this
-	char color_list[9*INDIC_MAX] = "";
-
     int match_count = 0;
-    int indicator_count = INDIC_CONTAINER;
 
-    while ( match_count < MAX_COLOR_CODE_HIGHTLIGHT && indicator_count <= INDIC_MAX) {
+    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT) {
 
 		// well - (?:) has no effect on scintilla's target end
 		char regexp[] = "(?:#)([0-9abcdefABCDEF]{3,6})(?:[^0-9abcdefABCDEF])";
@@ -552,48 +553,51 @@ void HighlightColorCode() {
 		COLORREF color = strtol(hex_color, NULL, 16);
 		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
-		// mark text with indicateors
-        int indicator_id = INDIC_CONTAINER;
-        
-        char search[10];
-        strcpy(search, "|");
-        strcat(search, hex_color);
-
-        if (strstr(color_list, search)) {
-
-			// if the indicator of the same color already exists
-			int index = INDIC_CONTAINER;
-            while (index <= indicator_count) {
-                if (color == ::SendMessage(h_scintilla, SCI_INDICGETFORE, index, 0)) {
-                    indicator_id = index;
-                    break;
-                }
-                index++;
-            }
-
-        } else {
-
-			// create new indicator
-			indicator_id = indicator_count;
-
-			::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_PLAIN);
-			::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator_id, (LPARAM)true);
-			::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator_id, (LPARAM)color);
-			::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator_id, (LPARAM)255);
-
-            strcat(color_list, search);
-            indicator_count++;
-
-        }
-
-		// set indicator
-        ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
-        ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, target_start, target_length+1);
+		HighlightCode(h_scintilla, color, target_start, target_end - target_start);
 
 		start_position = target_end; // move on
         match_count++;
 
     }
+
+}
+
+void HighlightCode(const HWND h_scintilla, const COLORREF color, const int start, int length){
+
+	if(_indicator_count > INDIC_MAX)
+		return;
+
+	// mark text with indicateors
+    int indicator_id = -1;
+
+	// search for exist indicator with same color
+	int index = INDIC_CONTAINER;
+    while (index <= _indicator_count) {
+        if (color == _indicator_colors[index]) {
+            indicator_id = index;
+            break;
+        }
+        index++;
+    }
+
+	// not found - create new indicator
+    if (indicator_id == -1 ) {
+
+		indicator_id = _indicator_count;
+
+		::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_PLAIN);
+		::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator_id, (LPARAM)true);
+		::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator_id, (LPARAM)color);
+		::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator_id, (LPARAM)255);
+
+		_indicator_colors[_indicator_count] = color;
+        _indicator_count++;
+
+    }
+
+	// set indicator
+    ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
+    ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, start, length);
 
 }
 
@@ -603,11 +607,13 @@ void RemoveColorHighlight() {
     
     int length = ::SendMessage(h_scintilla, SCI_GETTEXT, 0, 0);
     int i = INDIC_CONTAINER;
-    while (i <= INDIC_MAX) {
+    while (i <= _indicator_count) {
+		_indicator_colors[i] = 0;
         ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, i, 0);
         ::SendMessage(h_scintilla, SCI_INDICATORCLEARRANGE, 0, length);
         i++;
     }
 
-}
+	_indicator_count = INDIC_CONTAINER;
 
+}

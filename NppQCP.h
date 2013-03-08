@@ -50,5 +50,6 @@ void SaveRecentColor();
 void HighlightColorCode();
 void RemoveColorHighlight();
 
+void HighlightCode(const HWND h_scintilla, const COLORREF color, const int start, const int length);
 
 #endif //PLUGINDEFINITION_H
