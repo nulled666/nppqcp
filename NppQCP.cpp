@@ -441,7 +441,8 @@ bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
 	if(close_pos == -1)
 		return false;
 
-	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ )]|,[0-9. ]+\\))";
+	// only match the first 3 values
+	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*)";
 	::SendMessage(h_scintilla, SCI_SETTARGETSTART, start, 0);
 	::SendMessage(h_scintilla, SCI_SETTARGETEND, close_pos+1, 0);
 	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
@@ -470,7 +471,7 @@ bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
 
 	// prepare seletion range for replacement
 	_rgb_start = end + 1;
-	_rgb_end = close_pos;
+	_rgb_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
 
 	// create the color picker if not created
 	if (!_pColorPicker)
@@ -513,8 +514,6 @@ void ToggleColorPicker(){
 
 void WriteColor(COLORREF color) {
 
-	// convert to rgb color
-	color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
 	HWND h_scintilla = GetScintilla();
 
@@ -525,6 +524,8 @@ void WriteColor(COLORREF color) {
 		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _rgb_start, 0);
 		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _rgb_end, 0);
 	}else{
+		// convert to rgb order
+		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 		sprintf(buff, "%0*X", 6, color);
 	}
 		
@@ -677,7 +678,7 @@ void HighlightRgbColor(const HWND h_scintilla, const int start_position, const i
 
     while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
 
-		char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[^)]*\\))";
+		char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*)(?:\\)]|,[0-9. ]+\\))";
 
 		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
 		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
