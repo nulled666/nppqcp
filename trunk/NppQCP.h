@@ -47,15 +47,8 @@ void WriteColorCodeToEditor(COLORREF color);
 void LoadRecentColor();
 void SaveRecentColor();
 
-bool is_hex(char* str);
-bool pad_hex(char* out, const char* in);
-
-COLORREF revert_color_order(COLORREF color);
-COLORREF hex2color(char* str);
-
 void HighlightColorCode();
 void RemoveColorHighlight();
-char* substr(char* string, int begin, int end);
 
 
 #endif //PLUGINDEFINITION_H
