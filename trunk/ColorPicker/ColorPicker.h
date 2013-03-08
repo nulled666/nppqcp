@@ -90,6 +90,7 @@ class ColorPicker {
 		HWND _parent_window;
 		HWND _color_popup;
 
+		RECT _parent_rc;
 
 	private:
 	
@@ -117,6 +118,8 @@ class ColorPicker {
 		bool _is_first_create;
 		bool _is_color_chooser_shown;
 		
+		static void PlaceWindow(const HWND hwnd, const RECT rc);
+
 		// main popup
 		static BOOL CALLBACK ColorPopupWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 		BOOL CALLBACK ColorPopupMessageHandle(UINT message, WPARAM wparam, LPARAM lparam);

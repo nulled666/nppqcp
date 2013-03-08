@@ -153,34 +153,51 @@ void ColorPicker::GetRecentColor(COLORREF *&colors){
 // alter the parent rect to move the color popup
 void ColorPicker::SetParentRect(RECT rc) {
 
-	HMONITOR monitor = ::MonitorFromWindow(_color_popup, MONITOR_DEFAULTTONEAREST);
+	::CopyRect(&_parent_rc, &rc);
+
+	PlaceWindow(_color_popup, rc);
+
+}
+
+// static
+// place a window near the parent
+void ColorPicker::PlaceWindow(const HWND hwnd, const RECT rc) {
+
+	HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO mi;
 	mi.cbSize = sizeof(MONITORINFO);
 	::GetMonitorInfo(monitor, (LPMONITORINFO)&mi);
 
+	RECT rc_win;
+	::GetWindowRect(hwnd, &rc_win);
+
+	int win_width = rc_win.right - rc_win.left;
+	int win_height = rc_win.bottom - rc_win.top;
+
 	int x = 0, y = 0;
 
-	if ((rc.left + POPUP_WIDTH) > mi.rcWork.right) {
-		x = mi.rcWork.right - POPUP_WIDTH;
+	if ((rc.left + win_width) > mi.rcWork.right) {
+		x = mi.rcWork.right - win_width;
 	}else{
 		x = rc.left;
 	}
 
-	if ((rc.bottom + POPUP_HEIGHT) > mi.rcWork.bottom) {
-		y = rc.top - POPUP_HEIGHT;
+	if ((rc.bottom + win_height) > mi.rcWork.bottom) {
+		y = rc.top - win_height;
 	}else{
 		y = rc.bottom;
 	}
 
-    ::SetWindowPos(_color_popup, HWND_TOP, x, y, POPUP_WIDTH, POPUP_HEIGHT, SWP_SHOWWINDOW);
+	::SetWindowPos(hwnd, HWND_TOP, x, y, 0, 0, SWP_HIDEWINDOW|SWP_NOSIZE|SWP_NOZORDER);
 
 }
 
 void ColorPicker::Show() {
 
+	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOMOVE|SWP_NOSIZE);
+
 	DrawColorPalette();
 	PaintColorSwatches();
-	::ShowWindow(_color_popup, SW_SHOW);
 
 }
 
@@ -300,6 +317,13 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 
 // WM_INITDIALOG
 void ColorPicker::OnInitDialog(){
+
+	// set size
+	::SetWindowPos(_color_popup, HWND_TOP, 0, 0, POPUP_WIDTH, POPUP_HEIGHT, SWP_HIDEWINDOW|SWP_NOMOVE);
+
+	// place window
+	::GetWindowRect(_color_popup, &_parent_rc);
+	PlaceWindow(_color_popup, _parent_rc);
 
 	// dialog control ui stuff
 	_pick_cursor = ::LoadCursor(_instance, MAKEINTRESOURCE(IDI_CURSOR));
@@ -552,6 +576,7 @@ void ColorPicker::ShowColorChooser(){
 	cc.rgbResult = _old_color;
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT | CC_ENABLEHOOK;
 	cc.lpfnHook = (LPCCHOOKPROC)ColorChooserWINPROC;
+	cc.lCustData = (LPARAM)&_parent_rc;
 
 	Hide();
 
@@ -570,11 +595,11 @@ UINT_PTR CALLBACK ColorPicker::ColorChooserWINPROC(HWND hwnd, UINT message, WPAR
 	
 	if(message == WM_INITDIALOG){
 		// reposition the color chooser window
-		HWND popup = ::GetParent(hwnd);
-		RECT rc_popup, rc_self;
-		::GetWindowRect(popup, &rc_popup);
-		::GetWindowRect(hwnd, &rc_self);
-		::SetWindowPos(hwnd, HWND_TOP, rc_popup.left, rc_popup.top, rc_self.right - rc_self.left, rc_self.bottom - rc_self.top, SWP_SHOWWINDOW);
+		CHOOSECOLOR* cc = (CHOOSECOLOR*)lparam;
+		RECT* rc = (RECT*)cc->lCustData;
+		RECT rc_copy;
+		::CopyRect(&rc_copy, rc);
+		PlaceWindow(hwnd, rc_copy);
 	}
 
 	return 0;
@@ -588,7 +613,6 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 	if(color == _new_color) return;
 
 	_new_color = color;
-
 
 	// transform order for hex display
 	color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
