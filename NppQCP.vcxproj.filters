@@ -63,6 +63,7 @@
     <Image Include="ColorPicker\picker.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="misc\features.fw.png" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ColorPicker\ColorPicker.rc">
