@@ -627,8 +627,16 @@ void HighlightColorCode() {
     int start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
 	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
+	// save this to avoid conflict with search/replace
+	int current_target_start = ::SendMessage(h_scintilla, SCI_GETTARGETSTART, 0, 0);
+	int current_target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
+
 	HighlightHexColor(h_scintilla, start_position, end_position);
 	HighlightRgbColor(h_scintilla, start_position, end_position);
+
+	// restore target range
+	::SendMessage(h_scintilla, SCI_SETTARGETSTART, current_target_start, 0);
+	::SendMessage(h_scintilla, SCI_SETTARGETEND, current_target_end, 0);
 
 }
 
