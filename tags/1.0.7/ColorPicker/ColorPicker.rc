@@ -1,0 +1,27 @@
+
+#include <windows.h>
+
+#include "ColorPicker.res.h"
+
+// resources
+IDI_PICKER ICON "picker.ico"
+IDI_CURSOR CURSOR "picker.cur"
+
+// color picker popup
+IDD_COLOR_PICKER_POPUP DIALOGEX 0, 0, 174, 124
+STYLE DS_SETFONT | WS_POPUP | WS_BORDER
+FONT 9, TEXT("MS Shell Dlg"), 0, 0, 0x0
+BEGIN
+	DEFPUSHBUTTON   "", ID_PICK, 5, 114, 16, 16, BS_ICON
+    PUSHBUTTON		"...", ID_MORE, 22, 114, 16, 16
+    CTEXT			"", IDC_COLOR_TEXT, 72, 118, 80, 16
+END
+
+// screen color picker info panel
+IDD_SCREEN_PICKER_POPUP DIALOGEX 0, 0, 120, 120
+STYLE DS_SETFONT | WS_POPUP | WS_BORDER
+FONT 9, TEXT("MS Shell Dlg"), 0, 0, 0x0
+BEGIN
+    LTEXT			"HEXCOLOR", IDC_SCR_COLOR_HEX, 6, 118, 80, 16
+	LTEXT			"RGBCOLOR", IDC_SCR_COLOR_RGB, 6, 118, 80, 16
+END
