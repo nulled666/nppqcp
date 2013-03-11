@@ -72,7 +72,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 			break;
 		}
 		case SCN_ZOOM:
-		case SCN_SCROLLED:
 		{
 			HideColorPicker();
 			break;
