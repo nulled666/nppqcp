@@ -49,6 +49,10 @@ int _rgb_end = -1;
 int _indicator_count = INDIC_CONTAINER;
 COLORREF _indicator_colors[INDIC_MAX+1];
 
+
+////////////////////////////////////////
+// Plugin Init & Clean up
+////////////////////////////////////////
 void AttachDll(HANDLE module) {
 
 	_instance = (HINSTANCE)module;
@@ -624,7 +628,10 @@ void HighlightColorCode() {
 
 	first_visible_line = first_visible_line - 1; // i don't know why
 
-    int start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
+    int start_position = 0;
+	if(first_visible_line>1)
+		start_position = ::SendMessage(h_scintilla, SCI_POSITIONFROMLINE, first_visible_line, 0);
+
 	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
 	// save this to avoid conflict with search/replace
