@@ -9,11 +9,6 @@
 
 #include <windowsx.h>
 
-
-#define POPUP_WIDTH 266
-#define POPUP_HEIGHT 220
-#define SWATCH_BG_COLOR 0x666666
-
 ColorPicker::ColorPicker(COLORREF color) {
 	
 	focus_on_show = true;
@@ -134,7 +129,9 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 
 void ColorPicker::SetRecentColor(const COLORREF *colors){
 
-	for (int i=0; i<10; i++) {
+	int len = RECENT_ZONE_COLUMN*RECENT_ZONE_ROW;
+	
+	for (int i=0; i<len; i++) {
 		if(colors[i]>0xffffff || colors[i]<0)
 			continue;
 		_recent_color_data[i] = colors[i];
@@ -146,7 +143,7 @@ void ColorPicker::SetRecentColor(const COLORREF *colors){
 
 void ColorPicker::GetRecentColor(COLORREF *&colors){
 
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<RECENT_ZONE_COLUMN*RECENT_ZONE_ROW; i++) {
 		colors[i] = _recent_color_data[i];
 	}
 
@@ -340,14 +337,14 @@ void ColorPicker::OnInitDialog(){
 
 	HWND ctrl;
 	ctrl = ::GetDlgItem(_color_popup, ID_PICK);
-	::MoveWindow(ctrl, 6, 184, 32, 28, false);
+	::MoveWindow(ctrl, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, false);
 	::SendDlgItemMessage(_color_popup, ID_PICK, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 
 	ctrl = ::GetDlgItem(_color_popup, ID_MORE);
-	::MoveWindow(ctrl, 43, 184, 32, 28, false);
+	::MoveWindow(ctrl, BUTTON_X + BUTTON_WIDTH + CONTROL_PADDING, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, false);
 
 	ctrl = ::GetDlgItem(_color_popup, IDC_COLOR_TEXT);
-	::MoveWindow(ctrl, 100, 191, 80, 20, false);
+	::MoveWindow(ctrl, BUTTON_X + BUTTON_WIDTH*2 + CONTROL_PADDING*2, BUTTON_Y + (BUTTON_HEIGHT-12)/2, 80, 20, false);
 
 	// generate palette color array
 	GenerateColorPaletteData();
@@ -359,8 +356,8 @@ void ColorPicker::OnInitDialog(){
 void ColorPicker::DrawColorPalette(){
 	
 	RECT rc;
-	int base_x = 6;
-	int base_y = 6;
+	int base_x = CONTROL_PADDING;
+	int base_y = CONTROL_PADDING;
 
 	COLORREF color;
 	HBRUSH hbrush;
@@ -369,8 +366,8 @@ void ColorPicker::DrawColorPalette(){
 	// frame
 	rc.left = base_x;
 	rc.top =  base_y;
-	rc.right = base_x+12*21;
-	rc.bottom = base_y+12*14;
+	rc.right = base_x+PALETTE_CELL_SIZE*PALETTE_COLUMN;
+	rc.bottom = base_y+PALETTE_CELL_SIZE*PALETTE_ROW;
 	
 	// save the area rect for later use
 	::CopyRect(&_rect_palette, &rc);
@@ -382,14 +379,14 @@ void ColorPicker::DrawColorPalette(){
 	::DeleteObject(hbrush);
 
 	// swatches
-	for (int row = 0; row < 14; row++) {
+	for (int row = 0; row < PALETTE_ROW; row++) {
 		
-		rc.top = base_y + 12*row;
-		rc.bottom = rc.top + 12;
+		rc.top = base_y + PALETTE_CELL_SIZE*row;
+		rc.bottom = rc.top + PALETTE_CELL_SIZE;
 		rc.left = base_x;
-		rc.right = rc.left + 12;
+		rc.right = rc.left + PALETTE_CELL_SIZE;
 
-		for (int index = 0; index < 21; index++) {
+		for (int index = 0; index < PALETTE_COLUMN; index++) {
 
 			color = _color_palette_data[row][index];
 			hbrush = ::CreateSolidBrush(color);
@@ -403,8 +400,8 @@ void ColorPicker::DrawColorPalette(){
 					_old_color_found_in_palette = true;
 			}
 
-			rc.left += 12;
-			rc.right += 12;
+			rc.left += PALETTE_CELL_SIZE;
+			rc.right += PALETTE_CELL_SIZE;
 
 		}
 
@@ -431,12 +428,12 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 
 		_is_inside_palette = true;
 
-		int index = round((p.x-_rect_palette.left)/12);
-		int row = round((p.y-_rect_palette.top)/12);
+		int index = round((p.x-_rect_palette.left)/PALETTE_CELL_SIZE);
+		int row = round((p.y-_rect_palette.top)/PALETTE_CELL_SIZE);
 		if (index<0) index = 0;
 		if (row<0) row = 0;
 
-		if (index>21 || row>14)
+		if (index>=PALETTE_COLUMN || row>=PALETTE_ROW)
 			return TRUE;
 
 		COLORREF color = _color_palette_data[row][index];
@@ -492,10 +489,10 @@ void ColorPicker::DrawColorHoverBox(int row, int index, bool is_hover) {
 	if (is_hover)
 		color = color ^ 0xffffff;
 
-	rc.left = _rect_palette.left + index*12;
-	rc.right = rc.left + 12;
-	rc.top = _rect_palette.top + row*12;
-	rc.bottom = rc.top + 12;
+	rc.left = _rect_palette.left + index*PALETTE_CELL_SIZE;
+	rc.right = rc.left + PALETTE_CELL_SIZE;
+	rc.top = _rect_palette.top + row*PALETTE_CELL_SIZE;
+	rc.bottom = rc.top + PALETTE_CELL_SIZE;
 	hbrush = ::CreateSolidBrush(color);
 	::FrameRect(hdc, &rc, hbrush);
 	::DeleteBrush(hbrush);
@@ -574,7 +571,7 @@ void ColorPicker::ShowColorChooser(){
 		0,0,0,0,\
 	};
 
-	for(int i=0; i<10; i++){
+	for(int i=0; i<16; i++){
 		custom_colors[i] = _recent_color_data[i];
 	}
 
@@ -645,32 +642,30 @@ void ColorPicker::PaintColorSwatches() {
 	HDC hdc_win = ::GetDC(_color_popup);
 	RECT rc;
 	HBRUSH brush;
-	
-	// frame
-	rc.left = 208;
-	rc.top = 186;
-	rc.right = 208+50;
-	rc.bottom = 186+24;
-	brush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+
+	// old color
+	rc.right = POPUP_WIDTH - CONTROL_PADDING - 1;
+	rc.left = rc.right-SWATCH_WIDTH - 1;
+	rc.top = BUTTON_Y;
+	rc.bottom = rc.top+SWATCH_HEIGHT;
+	brush = ::CreateSolidBrush(_old_color);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 	
 	// new color
-	rc.left = 209;
-	rc.top = 187;
-	rc.right = 209+24;
-	rc.bottom = 187+22;
+	rc.right = rc.left;
+	rc.left = rc.right-SWATCH_WIDTH;
 	brush = ::CreateSolidBrush(_new_color);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
-
-	// old color
-	rc.left = 233;
-	rc.top = 187;
-	rc.right = 233+24;
-	rc.bottom = 187+22;
-	brush = ::CreateSolidBrush(_old_color);
-	::FillRect(hdc_win, &rc, brush);
+	
+	// frame
+	rc.left = POPUP_WIDTH - CONTROL_PADDING - SWATCH_WIDTH*2 - 2;
+	rc.right = POPUP_WIDTH - CONTROL_PADDING - 1;
+	rc.top = BUTTON_Y;
+	rc.bottom = BUTTON_Y + SWATCH_HEIGHT;
+	brush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	::FrameRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
 	::ReleaseDC(_color_popup, hdc_win);
@@ -683,10 +678,10 @@ void ColorPicker::PaintColorSwatches() {
 void ColorPicker::PutRecentColor(COLORREF color){
 
 	// shift start at the end
-	int pos = 9;
+	int pos = RECENT_ZONE_ROW*RECENT_ZONE_COLUMN - 1;
 
 	// whether the color is already inside the list
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < RECENT_ZONE_ROW*RECENT_ZONE_COLUMN; i++) {
 		if (_recent_color_data[i] == color) {
 			// already first one
 			if (i==0) return;
@@ -710,7 +705,7 @@ void ColorPicker::PutRecentColor(COLORREF color){
 
 void ColorPicker::LoadRecentColorData(){
 
-	for(int i=0; i < 10; i++){
+	for(int i=0; i < RECENT_ZONE_ROW*RECENT_ZONE_COLUMN; i++){
 		_recent_color_data[i] = 0;
 	}
 
@@ -719,9 +714,10 @@ void ColorPicker::LoadRecentColorData(){
 void ColorPicker::FillRecentColorData(){
 
 	// fill recent colors into first 2 rows of Color Palette
-	for(int i = 0; i < 5 ; i++){
-		_color_palette_data[0][i] = _recent_color_data[i];
-		_color_palette_data[1][i] = _recent_color_data[i+5];
+	for(int i = 0; i < RECENT_ZONE_ROW; i++){
+		for(int j = 0; j < RECENT_ZONE_COLUMN; j++){
+			_color_palette_data[i][j] = _recent_color_data[j+i*RECENT_ZONE_COLUMN];
+		}
 	}
 
 }
@@ -731,9 +727,9 @@ void ColorPicker::GenerateColorPaletteData(){
 	int row = 0;
 
 	// generate grayscale - 3 ROWS
-	for (int i = 0; i < 21; i++) {
+	for (int i = 0; i < PALETTE_COLUMN; i++) {
 
-		int t0 = (i-5)*0x11;
+		int t0 = (i-RECENT_ZONE_COLUMN)*0x11;
 		if (t0 < 0) t0 = 0;
 		if (t0 > 0xFF) t0 = 0xFF;
 	
@@ -756,56 +752,42 @@ void ColorPicker::GenerateColorPaletteData(){
 	row += 3;
 
 	// generate colors
-	for (int i = 0; i < (14 - 3); i ++) {
-
-		int main = 0x40 + round((double)(0xBF/5)*i);
-		int main0 = 0;
-	
-		int side1 = (int)floor((double)main/4);
-		int side2 = side1 * 2;
-		int side3 = side1 * 3;
-	
-		if(main >= 0xFF){
-			main0 = main - 0xFF;
-			main = 0xFF;
-			side1 = 0x40 + round((0x8F/5)*(i-5));
-			side3 = 0xBF + round((0x30/5)*(i-5));
+	for (double l = 0.05; l < 1; l += 0.075) {
+		for(int i=0; i<24; i++){
+			int h = i*15;
+			COLORREF rgb = hsl2rgb(h, 1.0, l);
+			_color_palette_data[row][i] = rgb;
 		}
-	
-		// do it the stupid way
-		#define PUT_COLOR(r,g,b) \
-			_color_palette_data[row][index] = RGB(r,g,b); \
-			index++;
-
-		int index = 0;
-
-		PUT_COLOR(main, main0, main0 );
-		PUT_COLOR(main, side1, main0);
-		PUT_COLOR(main, side2, main0);
-		PUT_COLOR(main, side3, main0);
-		PUT_COLOR(main, main, main0);
-		PUT_COLOR(side3, main, main0);
-		PUT_COLOR(side2, main, main0);
-		PUT_COLOR(side1, main, main0);
-		PUT_COLOR(main0, main, main0);
-		PUT_COLOR(main0, main, side1);
-		PUT_COLOR(main0, main, side2);
-		PUT_COLOR(main0, main, side3);
-		PUT_COLOR(main0, main, main);
-		PUT_COLOR(main0, side3, main);
-		PUT_COLOR(main0, side2, main);
-		PUT_COLOR(main0, side1, main);
-		PUT_COLOR(main0, main0, main);
-		PUT_COLOR(side1, main0, main);
-		PUT_COLOR(side2, main0, main);
-		PUT_COLOR(side3, main0, main);
-		PUT_COLOR(main, main0, main);
-				
 		row++;
-
 	}
 
 }
+
+COLORREF ColorPicker::hsl2rgb(int h, double s, double l){
+	
+	double h0 = (double)h / 360;
+	double m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
+	double m1 = l * 2 - m2;
+
+	int r = round( hue(h0 + 1.0/3, m1, m2) * 255 );
+	int g = round( hue(h0, m1, m2) * 255 );
+	int b = round( hue(h0 - 1.0/3, m1, m2) * 255 );
+	return RGB( r, g, b);
+}
+
+double ColorPicker::hue(double h, double m1, double m2){
+	h = h < 0 ? h + 1 : (h > 1 ? h - 1 : h);
+	if(h * 6 < 1){
+		return m1 + (m2 - m1) * h * 6;
+	} else if (h * 2 < 1) {
+		return m2;
+	} else if (h * 3 < 2) {
+		return m1 + (m2 - m1) * (2.0/3 - h) * 6;
+	} else {
+		return m1;
+	}
+}
+
 
 int ColorPicker::round(double number) {
 
