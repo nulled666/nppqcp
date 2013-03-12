@@ -752,7 +752,7 @@ void ColorPicker::GenerateColorPaletteData(){
 	row += 3;
 
 	// generate colors
-	for (double l = 0.05; l < 1; l += 0.075) {
+	for (double l = 0.125; l < 1; l += 0.075) {
 		for(int i=0; i<24; i++){
 			int h = i*15;
 			COLORREF rgb = hsl2rgb(h, 1.0, l);
