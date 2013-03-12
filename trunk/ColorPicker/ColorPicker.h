@@ -31,7 +31,30 @@ USAGE:
 #include "ColorPicker.res.h"
 #endif //COLOR_PICKER_RESOURCE_H
 
+#define PALETTE_ROW 15
+#define PALETTE_COLUMN 24
+#define PALETTE_CELL_SIZE 10
+#define PALETTE_WIDTH PALETTE_COLUMN * PALETTE_CELL_SIZE
+#define PALETTE_HEIGHT PALETTE_ROW * PALETTE_CELL_SIZE
+#define RECENT_ZONE_ROW 2
+#define RECENT_ZONE_COLUMN 8
 
+#define CONTROL_PADDING 6
+
+#define BUTTON_X CONTROL_PADDING
+#define BUTTON_Y PALETTE_HEIGHT + CONTROL_PADDING * 2
+#define BUTTON_WIDTH 32
+#define BUTTON_HEIGHT 28
+
+#define SWATCH_WIDTH 24
+#define SWATCH_HEIGHT BUTTON_HEIGHT
+
+#define POPUP_WIDTH PALETTE_WIDTH + CONTROL_PADDING*2 + 2
+#define POPUP_HEIGHT PALETTE_HEIGHT + BUTTON_HEIGHT + CONTROL_PADDING*3 + 2
+
+#define SWATCH_BG_COLOR 0x666666
+
+		
 class ColorPicker {
 
 	public:
@@ -104,8 +127,8 @@ class ColorPicker {
 		COLORREF _old_color;
 		COLORREF _new_color;
 
-		COLORREF _color_palette_data[14][21];
-		COLORREF _recent_color_data[10];
+		COLORREF _color_palette_data[PALETTE_ROW+1][PALETTE_COLUMN+1];
+		COLORREF _recent_color_data[RECENT_ZONE_ROW*RECENT_ZONE_COLUMN];
 		
 		RECT _rect_palette;
 		bool _is_inside_palette;
@@ -154,6 +177,8 @@ class ColorPicker {
 		void ShowColorChooser();
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
+		double hue(double h, double m1, double m2);
+		COLORREF hsl2rgb(int h, double s, double l);
 		int round(double number);
 
 };

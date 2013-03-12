@@ -570,10 +570,10 @@ void LoadRecentColor(){
 	if (!_pColorPicker)
 		return;
 
-	COLORREF colors[10];
+	COLORREF colors[16];
 	wchar_t key[20];
 
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<16; i++) {
 		wsprintf(key, L"recent%d", i);
 		colors[i] = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
 	}
@@ -586,14 +586,14 @@ void SaveRecentColor(){
 	if(!_pColorPicker)
 		return;
 
-	COLORREF colors[10];
+	COLORREF colors[16];
 	COLORREF* p_colors = colors;
 	_pColorPicker->GetRecentColor(p_colors);
 
-	wchar_t color[10];
+	wchar_t color[20];
 	wchar_t key[20];
 
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<16; i++) {
 		wsprintf(color, L"%d", colors[i]);
 		wsprintf(key, L"recent%d", i);
 		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
