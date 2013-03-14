@@ -196,8 +196,9 @@ class ColorPicker {
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 		// helper functions
-		HSLCOLOR rgb2hsl(COLORREF rgb);
-		COLORREF hsl2rgb(HSLCOLOR hsl);
+		HSLCOLOR rgb2hsl(const COLORREF rgb);
+		COLORREF hsl2rgb(const HSLCOLOR hsl);
+		COLORREF hsl2rgb(const double h, const double s, const double l);
 		double hue(double h, double m1, double m2);
 
 		int round(double number);
