@@ -32,6 +32,11 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_previous_color = NULL;
 	_previous_row = -1;
 	_previous_index = -1;
+
+	_adjust_color = _old_color;
+	_adjust_center_row = 0;
+	_previous_adjust_row = -1;
+	_previous_adjust_index = -1;
 	
 	_is_first_create = false;
 	_is_color_chooser_shown = false;
@@ -82,10 +87,12 @@ void ColorPicker::Color(COLORREF color, bool is_rgb) {
 	}
 	
 	_old_color = color;
+	_adjust_color = _old_color;
 	_old_color_found_in_palette = false;
 
 	// redraw palette
 	PaintColorPalette();
+	PaintAdjustButtons();
 	PaintColorPreview();
 
 }
@@ -264,7 +271,11 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		}
 		case WM_LBUTTONUP:
 		{
-			return OnMouseClick(lparam);
+			return OnMouseClick(lparam, false);
+		}
+		case WM_RBUTTONUP:
+		{
+			return OnMouseClick(lparam, true);
 		}
 		case WM_QCP_SCREEN_PICK:
 		{
@@ -365,6 +376,11 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 		// inside palette area
 		PaletteMouseMove(p);
 
+	} else if (PointInRect(p, _rect_adjust_buttons)) {
+
+		// inside adjust area
+		AdjustButtonsMouseMove(p);
+
 	} else {
 		
 		// outside palette
@@ -379,6 +395,13 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 			_previous_index = -1;
 		}
 
+		if (_previous_adjust_row != -1) {
+			DrawAdjustButtonHoverBox(_previous_adjust_row, _previous_adjust_index, false);
+			_previous_adjust_row = -1;
+			_previous_adjust_index = -1;
+
+		}
+
 		DisplayNewColor(_old_color);
 
 	}
@@ -389,7 +412,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 
 
 // WM_LBUTTONUP
-BOOL ColorPicker::OnMouseClick(LPARAM lparam){
+BOOL ColorPicker::OnMouseClick(LPARAM lparam, bool is_right_button){
 
 	POINT p;
 	p.x = GET_X_LPARAM(lparam);
@@ -397,7 +420,7 @@ BOOL ColorPicker::OnMouseClick(LPARAM lparam){
 
 	if (PointInRect(p, _rect_palette)) {
 
-		PaletteMouseClick(p);
+		PaletteMouseClick(p, is_right_button);
 
 	}
 
@@ -681,13 +704,16 @@ void ColorPicker::PaletteMouseMove(const POINT p){
 
 }
 
-void ColorPicker::PaletteMouseClick(const POINT p){
+void ColorPicker::PaletteMouseClick(const POINT p, bool is_right_button){
 
-	_old_color = _new_color;
-
-	SaveToRecentColor(_new_color);
-
-	::SendMessage(_message_window, WM_QCP_PICK, _old_color, 0);
+	if(!is_right_button){
+		_old_color = _new_color;
+		SaveToRecentColor(_new_color);
+		::SendMessage(_message_window, WM_QCP_PICK, _old_color, 0);
+	}else{
+		_adjust_color = _new_color;
+		PaintAdjustButtons();
+	}
 
 }
 
@@ -705,6 +731,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 
 	for(int i=0; i<ADJUST_BUTTON_ROW; i++){
 		if(q[i]==0){
+			_adjust_center_row = i;
 			_adjust_color_data[0][i] = color;
 			_adjust_color_data[1][i] = color;
 			_adjust_color_data[2][i] = color;
@@ -719,7 +746,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 
 void ColorPicker::PaintAdjustButtons(){
 
-	GenerateAdjustColors(_old_color);
+	GenerateAdjustColors(_adjust_color);
 
 	RECT rc;
 	int base_x = PALETTE_WIDTH + CONTROL_PADDING*2;
@@ -735,7 +762,7 @@ void ColorPicker::PaintAdjustButtons(){
 	rc.bottom = base_y + ADJUST_BUTTON_HEIGHT*ADJUST_BUTTON_ROW;
 	
 	// save the area rect for later use
-	//::CopyRect(&_rect_adjust, &rc);
+	::CopyRect(&_rect_adjust_buttons, &rc);
 
 	::InflateRect(&rc, 1, 1);
 
@@ -766,10 +793,10 @@ void ColorPicker::PaintAdjustButtons(){
 
 	rc.left = base_x;
 	rc.right = base_x + ADJUST_BUTTON_WIDTH*3 + 2;
-	rc.top =  base_y + ADJUST_BUTTON_HEIGHT*(ADJUST_BUTTON_ROW/2);
+	rc.top = base_y + ADJUST_BUTTON_HEIGHT*_adjust_center_row;
 	rc.bottom = rc.top + ADJUST_BUTTON_HEIGHT;
 
-	hbrush = ::CreateSolidBrush(_old_color);
+	hbrush = ::CreateSolidBrush(_adjust_color);
 	::FillRect(hdc, &rc, hbrush);
 	::DeleteObject(hbrush);
 
@@ -782,6 +809,67 @@ void ColorPicker::PaintAdjustButtons(){
 
 }
 
+void ColorPicker::DrawAdjustButtonHoverBox(int row, int index, bool is_hover){
+	
+	HDC hdc = ::GetDC(_color_popup);
+	HBRUSH hbrush;
+	RECT rc;
+	COLORREF color;
+
+	color = _adjust_color_data[index][row];
+	if (is_hover)
+		color = color ^ 0xffffff;
+
+	rc.left = _rect_adjust_buttons.left + index*(ADJUST_BUTTON_WIDTH+1);
+	rc.right = rc.left + ADJUST_BUTTON_WIDTH;
+	rc.top = _rect_adjust_buttons.top + row*ADJUST_BUTTON_HEIGHT;
+	rc.bottom = rc.top + ADJUST_BUTTON_HEIGHT;
+
+	if(row == _adjust_center_row){
+		rc.left = _rect_adjust_buttons.left;
+		rc.right = _rect_adjust_buttons.right;
+		::InflateRect(&rc, 0, -1);
+	}
+
+	hbrush = ::CreateSolidBrush(color);
+	::FrameRect(hdc, &rc, hbrush);
+	::DeleteBrush(hbrush);
+
+	::ReleaseDC(_color_popup, hdc);
+
+}
+
+void ColorPicker::AdjustButtonsMouseMove(const POINT p){
+
+	_show_picker_cursor = true;
+
+	int index = round((p.x-_rect_adjust_buttons.left)/(ADJUST_BUTTON_WIDTH+1));
+	int row = round((p.y-_rect_adjust_buttons.top)/ADJUST_BUTTON_HEIGHT);
+	if (index<0) index = 0;
+	if (row<0) row = 0;
+
+	if (index>=3 || row>=ADJUST_BUTTON_ROW)
+		return;
+
+	// no change
+	if (_previous_adjust_row==row && _previous_adjust_index==index)
+		return;
+
+	// clean previous swatch
+	if (_previous_adjust_row != -1) {
+		DrawAdjustButtonHoverBox(_previous_adjust_row, _previous_adjust_index, false);
+	}
+
+	// draw current swatch
+	DrawAdjustButtonHoverBox(row, index, true);
+
+	_previous_adjust_row = row;
+	_previous_adjust_index = index;
+
+	COLORREF color = _adjust_color_data[index][row];
+	DisplayNewColor(color);
+
+}
 
 
 ///////////////////////////////////////////////////////////////////
