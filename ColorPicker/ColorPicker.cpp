@@ -701,7 +701,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 	HSLCOLOR hsl = rgb2hsl(color);
 	COLORREF cc = hsl2rgb(hsl);
 
-	double q[] = {-20.0, -10.0, -5.0, -1.0, 0 , 1.0, 5.0, 10.0, 20.0};
+	double q[] = {-20.0, -10.0, -5.0, -2.5, 0 , 2.5, 5.0, 10.0, 20.0};
 
 	for(int i=0; i<ADJUST_BUTTON_ROW; i++){
 		if(q[i]==0){
@@ -711,7 +711,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 			continue;
 		}
 		_adjust_color_data[0][i] = hsl2rgb(hsl.h + q[i], hsl.s, hsl.l);
-		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/100, hsl.l);
+		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/50, hsl.l);
 		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i]/100);
 	}
 
@@ -725,14 +725,13 @@ void ColorPicker::PaintAdjustButtons(){
 	int base_x = PALETTE_WIDTH + CONTROL_PADDING*2;
 	int base_y = CONTROL_PADDING;
 
-	COLORREF color;
 	HBRUSH hbrush;
 	HDC hdc = ::GetDC(_color_popup);
 	
 	// frame
 	rc.left = base_x;
+	rc.right = base_x + ADJUST_BUTTON_WIDTH*3 + 2;
 	rc.top =  base_y;
-	rc.right = base_x + ADJUST_BUTTON_WIDTH*3;
 	rc.bottom = base_y + ADJUST_BUTTON_HEIGHT*ADJUST_BUTTON_ROW;
 	
 	// save the area rect for later use
@@ -741,7 +740,7 @@ void ColorPicker::PaintAdjustButtons(){
 	::InflateRect(&rc, 1, 1);
 
 	hbrush = ::CreateSolidBrush(SWATCH_BG_COLOR);
-	::FrameRect(hdc, &rc, hbrush);
+	::FillRect(hdc, &rc, hbrush);
 	::DeleteObject(hbrush);
 
 	// paint current color
@@ -753,17 +752,31 @@ void ColorPicker::PaintAdjustButtons(){
 		hbrush = ::CreateSolidBrush(_adjust_color_data[0][i]);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
-		rc.left = rc.right;
+		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_BUTTON_WIDTH;
 		hbrush = ::CreateSolidBrush(_adjust_color_data[1][i]);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
-		rc.left = rc.right;
+		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_BUTTON_WIDTH;
 		hbrush = ::CreateSolidBrush(_adjust_color_data[2][i]);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
 	}
+
+	rc.left = base_x;
+	rc.right = base_x + ADJUST_BUTTON_WIDTH*3 + 2;
+	rc.top =  base_y + ADJUST_BUTTON_HEIGHT*(ADJUST_BUTTON_ROW/2);
+	rc.bottom = rc.top + ADJUST_BUTTON_HEIGHT;
+
+	hbrush = ::CreateSolidBrush(_old_color);
+	::FillRect(hdc, &rc, hbrush);
+	::DeleteObject(hbrush);
+
+	::InflateRect(&rc, 1, 0);
+	hbrush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	::FrameRect(hdc, &rc, hbrush);
+	::DeleteObject(hbrush);
 
 	::ReleaseDC(_color_popup, hdc);
 
