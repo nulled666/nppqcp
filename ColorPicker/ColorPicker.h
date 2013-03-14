@@ -34,26 +34,27 @@ USAGE:
 #define PALETTE_ROW 14
 #define PALETTE_COLUMN 24
 #define PALETTE_CELL_SIZE 9
-#define PALETTE_WIDTH PALETTE_COLUMN * PALETTE_CELL_SIZE
-#define PALETTE_HEIGHT PALETTE_ROW * PALETTE_CELL_SIZE
+#define PALETTE_WIDTH (PALETTE_COLUMN * PALETTE_CELL_SIZE)
+#define PALETTE_HEIGHT (PALETTE_ROW * PALETTE_CELL_SIZE)
 #define RECENT_ZONE_ROW 2
 #define RECENT_ZONE_COLUMN 8
 
+#define ADJUST_BUTTON_ROW 9
 #define ADJUST_BUTTON_WIDTH 14
-#define ADJUST_BUTTON_HEIGHT PALETTE_HEIGHT/7
+#define ADJUST_BUTTON_HEIGHT (PALETTE_HEIGHT/ADJUST_BUTTON_ROW)
 
 #define CONTROL_PADDING 6
 
 #define BUTTON_X CONTROL_PADDING
-#define BUTTON_Y PALETTE_HEIGHT + CONTROL_PADDING * 2
+#define BUTTON_Y (PALETTE_HEIGHT + CONTROL_PADDING * 2)
 #define BUTTON_WIDTH 32
 #define BUTTON_HEIGHT 28
 
 #define SWATCH_WIDTH 24
 #define SWATCH_HEIGHT BUTTON_HEIGHT
 
-#define POPUP_WIDTH PALETTE_WIDTH + ADJUST_BUTTON_WIDTH*3 + CONTROL_PADDING*3 +  2
-#define POPUP_HEIGHT PALETTE_HEIGHT + BUTTON_HEIGHT + CONTROL_PADDING*3 + 2
+#define POPUP_WIDTH (PALETTE_WIDTH + ADJUST_BUTTON_WIDTH*3 + CONTROL_PADDING*3 +  2)
+#define POPUP_HEIGHT (PALETTE_HEIGHT + BUTTON_HEIGHT + CONTROL_PADDING*3 + 2)
 
 #define SWATCH_BG_COLOR 0x666666
 
@@ -141,7 +142,8 @@ class ColorPicker {
 
 		COLORREF _color_palette_data[PALETTE_ROW+1][PALETTE_COLUMN+1];
 		COLORREF _recent_color_data[RECENT_ZONE_ROW*RECENT_ZONE_COLUMN];
-		
+		COLORREF _adjust_color_data[3][ADJUST_BUTTON_ROW];
+
 		RECT _rect_palette;
 
 		int _old_color_row;
@@ -163,24 +165,25 @@ class ColorPicker {
 		void OnInitDialog();
 		BOOL OnMouseMove(LPARAM lparam);
 		BOOL OnMouseClick(LPARAM lparam);
+
+		bool PointInRect(const POINT p, const RECT rc);
+		
+		// color preview
+		void PaintColorPreview();
+		void DisplayNewColor(COLORREF color);
 		
 		// palette
-		void LoadRecentColorData();
-		void PutRecentColor(COLORREF color);
-		void FillRecentColorData();
-
 		void GenerateColorPaletteData();
+		void LoadRecentColorData();
+		void SaveToRecentColor(COLORREF color);
+		void FillRecentColorData();
 
 		void PaintColorPalette();
 		void DrawColorHoverBox(int row, int index, bool is_hover = true);
 		void PaletteMouseMove(const POINT p);
 		void PaletteMouseClick(const POINT p);
 
-		bool PointInRect(const POINT p, const RECT rc);
-
-		void PaintColorSwatches();
-		void DisplayNewColor(COLORREF color);
-
+		void GenerateAdjustColors(COLORREF color);
 		void PaintAdjustButtons();
 
 		// screen color picker
@@ -192,9 +195,9 @@ class ColorPicker {
 		void ShowColorChooser();
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
-		
-		HSLCOLOR rgb2hsl(COLORREF color);
-		COLORREF hsl2rgb(double h, double s, double l);
+		// helper functions
+		HSLCOLOR rgb2hsl(COLORREF rgb);
+		COLORREF hsl2rgb(HSLCOLOR hsl);
 		double hue(double h, double m1, double m2);
 
 		int round(double number);
