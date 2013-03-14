@@ -33,11 +33,14 @@ USAGE:
 
 #define PALETTE_ROW 14
 #define PALETTE_COLUMN 24
-#define PALETTE_CELL_SIZE 10
+#define PALETTE_CELL_SIZE 9
 #define PALETTE_WIDTH PALETTE_COLUMN * PALETTE_CELL_SIZE
 #define PALETTE_HEIGHT PALETTE_ROW * PALETTE_CELL_SIZE
 #define RECENT_ZONE_ROW 2
 #define RECENT_ZONE_COLUMN 8
+
+#define ADJUST_BUTTON_WIDTH 14
+#define ADJUST_BUTTON_HEIGHT PALETTE_HEIGHT/7
 
 #define CONTROL_PADDING 6
 
@@ -49,18 +52,26 @@ USAGE:
 #define SWATCH_WIDTH 24
 #define SWATCH_HEIGHT BUTTON_HEIGHT
 
-#define POPUP_WIDTH PALETTE_WIDTH + CONTROL_PADDING*2 + 2
+#define POPUP_WIDTH PALETTE_WIDTH + ADJUST_BUTTON_WIDTH*3 + CONTROL_PADDING*3 +  2
 #define POPUP_HEIGHT PALETTE_HEIGHT + BUTTON_HEIGHT + CONTROL_PADDING*3 + 2
 
 #define SWATCH_BG_COLOR 0x666666
 
-		
+
+
+
 class ColorPicker {
 
 	public:
 
 		ColorPicker(COLORREF color = 0);
 		~ColorPicker();
+
+		struct HSLCOLOR{
+			double h;
+			double s;
+			double l;
+		};
 
 		bool focus_on_show;
 
@@ -122,6 +133,7 @@ class ColorPicker {
 		HWND _message_window;
 
 		HCURSOR _pick_cursor;
+		bool _show_picker_cursor;
 
 		bool _old_color_found_in_palette;
 		COLORREF _old_color;
@@ -131,7 +143,6 @@ class ColorPicker {
 		COLORREF _recent_color_data[RECENT_ZONE_ROW*RECENT_ZONE_COLUMN];
 		
 		RECT _rect_palette;
-		bool _is_inside_palette;
 
 		int _old_color_row;
 		int _old_color_index;
@@ -160,13 +171,17 @@ class ColorPicker {
 
 		void GenerateColorPaletteData();
 
-		void DrawColorPalette();
+		void PaintColorPalette();
 		void DrawColorHoverBox(int row, int index, bool is_hover = true);
+		void PaletteMouseMove(const POINT p);
+		void PaletteMouseClick(const POINT p);
 
 		bool PointInRect(const POINT p, const RECT rc);
 
-		void DisplayNewColor(COLORREF color);
 		void PaintColorSwatches();
+		void DisplayNewColor(COLORREF color);
+
+		void PaintAdjustButtons();
 
 		// screen color picker
 		ScreenPicker* _pScreenPicker;
@@ -177,8 +192,11 @@ class ColorPicker {
 		void ShowColorChooser();
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
+		
+		HSLCOLOR rgb2hsl(COLORREF color);
+		COLORREF hsl2rgb(double h, double s, double l);
 		double hue(double h, double m1, double m2);
-		COLORREF hsl2rgb(int h, double s, double l);
+
 		int round(double number);
 
 };
