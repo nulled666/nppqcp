@@ -153,6 +153,13 @@ class ColorPicker {
 		int _previous_row;
 		int _previous_index;
 
+		RECT _rect_adjust_buttons;
+
+		COLORREF _adjust_color;
+		int _adjust_center_row;
+		int _previous_adjust_row;
+		int _previous_adjust_index;
+
 		bool _is_first_create;
 		bool _is_color_chooser_shown;
 		
@@ -164,7 +171,7 @@ class ColorPicker {
 
 		void OnInitDialog();
 		BOOL OnMouseMove(LPARAM lparam);
-		BOOL OnMouseClick(LPARAM lparam);
+		BOOL OnMouseClick(LPARAM lparam, bool is_right_button);
 
 		bool PointInRect(const POINT p, const RECT rc);
 		
@@ -181,10 +188,12 @@ class ColorPicker {
 		void PaintColorPalette();
 		void DrawColorHoverBox(int row, int index, bool is_hover = true);
 		void PaletteMouseMove(const POINT p);
-		void PaletteMouseClick(const POINT p);
+		void PaletteMouseClick(const POINT p, bool is_right_button);
 
 		void GenerateAdjustColors(COLORREF color);
 		void PaintAdjustButtons();
+		void AdjustButtonsMouseMove(const POINT p);
+		void DrawAdjustButtonHoverBox(int row, int index, bool is_hover = true);
 
 		// screen color picker
 		ScreenPicker* _pScreenPicker;
