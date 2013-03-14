@@ -35,8 +35,8 @@ ColorPicker::ColorPicker(COLORREF color) {
 
 	_adjust_color = _old_color;
 	_adjust_center_row = 0;
-	_previous_adjust_row = -1;
-	_previous_adjust_index = -1;
+	_adjust_row = -1;
+	_adjust_index = -1;
 	
 	_is_first_create = false;
 	_is_color_chooser_shown = false;
@@ -92,7 +92,7 @@ void ColorPicker::Color(COLORREF color, bool is_rgb) {
 
 	// redraw palette
 	PaintColorPalette();
-	PaintAdjustButtons();
+	PaintAdjustZone();
 	PaintColorPreview();
 
 }
@@ -208,7 +208,7 @@ void ColorPicker::Show() {
 
 	PaintColorPalette();
 	PaintColorPreview();
-	PaintAdjustButtons();
+	PaintAdjustZone();
 
 	DisplayNewColor(_old_color);
 
@@ -379,7 +379,7 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 	} else if (PointInRect(p, _rect_adjust_buttons)) {
 
 		// inside adjust area
-		AdjustButtonsMouseMove(p);
+		AdjustZoneMouseMove(p);
 
 	} else {
 		
@@ -395,10 +395,10 @@ BOOL ColorPicker::OnMouseMove(LPARAM lparam){
 			_previous_index = -1;
 		}
 
-		if (_previous_adjust_row != -1) {
-			DrawAdjustButtonHoverBox(_previous_adjust_row, _previous_adjust_index, false);
-			_previous_adjust_row = -1;
-			_previous_adjust_index = -1;
+		if (_adjust_row != -1) {
+			DrawAdjustZoneHoverBox(_adjust_row, _adjust_index, false);
+			_adjust_row = -1;
+			_adjust_index = -1;
 
 		}
 
@@ -421,6 +421,10 @@ BOOL ColorPicker::OnMouseClick(LPARAM lparam, bool is_right_button){
 	if (PointInRect(p, _rect_palette)) {
 
 		PaletteMouseClick(p, is_right_button);
+
+	} else if (PointInRect(p, _rect_adjust_buttons)) {
+
+		AdjustZoneMouseClick(p, is_right_button);
 
 	}
 
@@ -708,11 +712,11 @@ void ColorPicker::PaletteMouseClick(const POINT p, bool is_right_button){
 
 	if(!is_right_button){
 		_old_color = _new_color;
-		SaveToRecentColor(_new_color);
+		SaveToRecentColor(_old_color);
 		::SendMessage(_message_window, WM_QCP_PICK, _old_color, 0);
 	}else{
 		_adjust_color = _new_color;
-		PaintAdjustButtons();
+		PaintAdjustZone();
 	}
 
 }
@@ -744,7 +748,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 
 }
 
-void ColorPicker::PaintAdjustButtons(){
+void ColorPicker::PaintAdjustZone(){
 
 	GenerateAdjustColors(_adjust_color);
 
@@ -809,7 +813,7 @@ void ColorPicker::PaintAdjustButtons(){
 
 }
 
-void ColorPicker::DrawAdjustButtonHoverBox(int row, int index, bool is_hover){
+void ColorPicker::DrawAdjustZoneHoverBox(int row, int index, bool is_hover){
 	
 	HDC hdc = ::GetDC(_color_popup);
 	HBRUSH hbrush;
@@ -839,35 +843,62 @@ void ColorPicker::DrawAdjustButtonHoverBox(int row, int index, bool is_hover){
 
 }
 
-void ColorPicker::AdjustButtonsMouseMove(const POINT p){
+void ColorPicker::AdjustZoneMouseMove(const POINT p){
 
-	_show_picker_cursor = true;
 
 	int index = round((p.x-_rect_adjust_buttons.left)/(ADJUST_BUTTON_WIDTH+1));
 	int row = round((p.y-_rect_adjust_buttons.top)/ADJUST_BUTTON_HEIGHT);
 	if (index<0) index = 0;
 	if (row<0) row = 0;
 
+	if(row == _adjust_center_row){
+		_show_picker_cursor = true;
+	}else{
+		_show_picker_cursor = false;
+	}
+
 	if (index>=3 || row>=ADJUST_BUTTON_ROW)
 		return;
 
 	// no change
-	if (_previous_adjust_row==row && _previous_adjust_index==index)
+	if (_adjust_row==row && _adjust_index==index)
 		return;
 
 	// clean previous swatch
-	if (_previous_adjust_row != -1) {
-		DrawAdjustButtonHoverBox(_previous_adjust_row, _previous_adjust_index, false);
+	if (_adjust_row != -1) {
+		DrawAdjustZoneHoverBox(_adjust_row, _adjust_index, false);
 	}
 
 	// draw current swatch
-	DrawAdjustButtonHoverBox(row, index, true);
+	DrawAdjustZoneHoverBox(row, index, true);
 
-	_previous_adjust_row = row;
-	_previous_adjust_index = index;
+	_adjust_row = row;
+	_adjust_index = index;
 
 	COLORREF color = _adjust_color_data[index][row];
 	DisplayNewColor(color);
+
+}
+
+void ColorPicker::AdjustZoneMouseClick(const POINT p, bool is_right_button){
+
+	if(_adjust_row==-1 || _adjust_index==-1)
+		return;
+
+	COLORREF color = _adjust_color_data[_adjust_index][_adjust_row];
+
+	// pick color
+	if(_adjust_center_row == _adjust_row){
+		_old_color = color;
+		SaveToRecentColor(_old_color);
+		::SendMessage(_message_window, WM_QCP_PICK, _old_color, 0);
+		return;
+	}
+
+	// adjust color
+	_adjust_color = color;
+	PaintAdjustZone();
+	DrawAdjustZoneHoverBox(_adjust_row, _adjust_index, true);
 
 }
 

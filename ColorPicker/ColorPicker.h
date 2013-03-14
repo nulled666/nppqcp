@@ -50,7 +50,7 @@ USAGE:
 #define BUTTON_WIDTH 32
 #define BUTTON_HEIGHT 28
 
-#define SWATCH_WIDTH 24
+#define SWATCH_WIDTH 20
 #define SWATCH_HEIGHT BUTTON_HEIGHT
 
 #define POPUP_WIDTH (PALETTE_WIDTH + ADJUST_BUTTON_WIDTH*3 + CONTROL_PADDING*3 +  4)
@@ -157,8 +157,8 @@ class ColorPicker {
 
 		COLORREF _adjust_color;
 		int _adjust_center_row;
-		int _previous_adjust_row;
-		int _previous_adjust_index;
+		int _adjust_row;
+		int _adjust_index;
 
 		bool _is_first_create;
 		bool _is_color_chooser_shown;
@@ -191,9 +191,10 @@ class ColorPicker {
 		void PaletteMouseClick(const POINT p, bool is_right_button);
 
 		void GenerateAdjustColors(COLORREF color);
-		void PaintAdjustButtons();
-		void AdjustButtonsMouseMove(const POINT p);
-		void DrawAdjustButtonHoverBox(int row, int index, bool is_hover = true);
+		void PaintAdjustZone();
+		void DrawAdjustZoneHoverBox(int row, int index, bool is_hover = true);
+		void AdjustZoneMouseMove(const POINT p);
+		void AdjustZoneMouseClick(const POINT p, bool is_right_button);
 
 		// screen color picker
 		ScreenPicker* _pScreenPicker;
