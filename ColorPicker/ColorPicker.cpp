@@ -507,11 +507,7 @@ void ColorPicker::GenerateColorPaletteData(){
 	for (double l = 0.125; l < 1; l += 0.075) {
 		for(int i=0; i<24; i++){
 			int h = i*15;
-			HSLCOLOR hsl;
-			hsl.h = (double)h;
-			hsl.s = 1.0;
-			hsl.l = l;
-			COLORREF rgb = hsl2rgb(hsl);
+			COLORREF rgb = hsl2rgb((double)h, 1.0, l);
 			_color_palette_data[row][i] = rgb;
 		}
 		row++;
@@ -700,18 +696,30 @@ void ColorPicker::PaletteMouseClick(const POINT p){
 // ADJUST BUTTONS
 ///////////////////////////////////////////////////////////////////
 
-void ColorPicker::GenerateAdjustColors(COLORREF color){
+void ColorPicker::GenerateAdjustColors(const COLORREF color){
 
 	HSLCOLOR hsl = rgb2hsl(color);
-	HSLCOLOR new_hsl;
-	
-	new_hsl = hsl;
+	COLORREF cc = hsl2rgb(hsl);
 
-	_adjust_color_data[0][0];
+	double q[] = {-20.0, -10.0, -5.0, -1.0, 0 , 1.0, 5.0, 10.0, 20.0};
+
+	for(int i=0; i<ADJUST_BUTTON_ROW; i++){
+		if(q[i]==0){
+			_adjust_color_data[0][i] = color;
+			_adjust_color_data[1][i] = color;
+			_adjust_color_data[2][i] = color;
+			continue;
+		}
+		_adjust_color_data[0][i] = hsl2rgb(hsl.h + q[i], hsl.s, hsl.l);
+		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/100, hsl.l);
+		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i]/100);
+	}
 
 }
 
 void ColorPicker::PaintAdjustButtons(){
+
+	GenerateAdjustColors(_old_color);
 
 	RECT rc;
 	int base_x = PALETTE_WIDTH + CONTROL_PADDING*2;
@@ -724,8 +732,8 @@ void ColorPicker::PaintAdjustButtons(){
 	// frame
 	rc.left = base_x;
 	rc.top =  base_y;
-	rc.right = base_x + ADJUST_BUTTON_WIDTH*3 + 2;
-	rc.bottom = base_y + ADJUST_BUTTON_HEIGHT*ADJUST_BUTTON_ROW + 2 - 1;
+	rc.right = base_x + ADJUST_BUTTON_WIDTH*3;
+	rc.bottom = base_y + ADJUST_BUTTON_HEIGHT*ADJUST_BUTTON_ROW;
 	
 	// save the area rect for later use
 	//::CopyRect(&_rect_adjust, &rc);
@@ -737,11 +745,25 @@ void ColorPicker::PaintAdjustButtons(){
 	::DeleteObject(hbrush);
 
 	// paint current color
-	rc.top = ADJUST_BUTTON_HEIGHT*(ADJUST_BUTTON_ROW/2);
-	rc.bottom = rc.top + ADJUST_BUTTON_HEIGHT;
-	hbrush = ::CreateSolidBrush(_old_color);
-	::FillRect(hdc, &rc, hbrush);
-	::DeleteObject(hbrush);
+	for(int i=0; i<ADJUST_BUTTON_ROW; i++){
+		rc.top = base_y + ADJUST_BUTTON_HEIGHT*i;
+		rc.bottom = rc.top + ADJUST_BUTTON_HEIGHT;
+		rc.left = base_x;
+		rc.right = rc.left + ADJUST_BUTTON_WIDTH;
+		hbrush = ::CreateSolidBrush(_adjust_color_data[0][i]);
+		::FillRect(hdc, &rc, hbrush);
+		::DeleteObject(hbrush);
+		rc.left = rc.right;
+		rc.right = rc.left + ADJUST_BUTTON_WIDTH;
+		hbrush = ::CreateSolidBrush(_adjust_color_data[1][i]);
+		::FillRect(hdc, &rc, hbrush);
+		::DeleteObject(hbrush);
+		rc.left = rc.right;
+		rc.right = rc.left + ADJUST_BUTTON_WIDTH;
+		hbrush = ::CreateSolidBrush(_adjust_color_data[2][i]);
+		::FillRect(hdc, &rc, hbrush);
+		::DeleteObject(hbrush);
+	}
 
 	::ReleaseDC(_color_popup, hdc);
 
@@ -848,16 +870,16 @@ UINT_PTR CALLBACK ColorPicker::ColorChooserWINPROC(HWND hwnd, UINT message, WPAR
 ColorPicker::HSLCOLOR ColorPicker::rgb2hsl(COLORREF rgb){
 	
 	double r, g, b;
-	r = (double)GetRValue(rgb) / 255;
-	g = (double)GetGValue(rgb) / 255;
-    b = (double)GetBValue(rgb) / 255;
+	r = (double)GetRValue(rgb) / 255.0;
+	g = (double)GetGValue(rgb) / 255.0;
+    b = (double)GetBValue(rgb) / 255.0;
 
     double max, min;
 	max = max(max(r, g), b);
-	min = max(min(r, g), b);
+	min = min(min(r, g), b);
 
     double h, s, l, d;
-	l = (max + min) / 2;
+	l = (max + min) / 2.0;
 	d = max - min;
 
     if (max == min) {
@@ -865,24 +887,24 @@ ColorPicker::HSLCOLOR ColorPicker::rgb2hsl(COLORREF rgb){
     } else {
 
         s = l > 0.5 ?
-				d / (2 - max - min)
+				d / (2.0 - max - min)
 			:
 				d / (max + min);
 
         if (max == r) {
-            h = (g - b) / d + (g < b ? 6 : 0);
+            h = (g - b) / d + (g < b ? 6.0 : 0);
 		}else if(max == g){
-            h = (b - r) / d + 2;
+            h = (b - r) / d + 2.0;
 		}else{
-            h = (r - g) / d + 4;
+            h = (r - g) / d + 4.0;
         }
 
-        h /= 6;
+        h /= 6.0;
 
     }
 
 	HSLCOLOR hsl;
-	hsl.h = h;
+	hsl.h = h * 360;
 	hsl.s = s;
 	hsl.l = l;
 
@@ -891,24 +913,35 @@ ColorPicker::HSLCOLOR ColorPicker::rgb2hsl(COLORREF rgb){
 }
 
 COLORREF ColorPicker::hsl2rgb(HSLCOLOR hsl){
-	
-	double h0, m1, m2;
-	h0 = ((int)hsl.h % 360);
-	h0 = h0 / 360;
-	
-	m2 = hsl.l <= 0.5 ?
-			hsl.l * (hsl.s + 1)
-		:
-			hsl.l + hsl.s - hsl.l * hsl.s;
+	return hsl2rgb(hsl.h, hsl.s, hsl.l);
+}
 
-	m1 = hsl.l * 2 - m2;
+COLORREF ColorPicker::hsl2rgb(double h0, double s0, double l0){
+	double h, s, l, m1, m2;
+	
+	h = ((int)h0 % 360);
+	if (h<0) h = 360 + h;
+	h = h / 360;
+	
+	s = s0<0 ? 0 : s0;
+	s = s0>1.0 ? 1.0 : s;
+	
+	l = l0<0 ? 0 : l0;
+	l = l0>1.0 ? 1.0 : l;
+
+	m2 = l <= 0.5 ?
+			l * (s + 1)
+		:
+			l + s - l * s;
+
+	m1 = l * 2 - m2;
 
 	int r, g, b;
-	r = round( hue(h0 + 1.0/3, m1, m2) * 255 );
-	g = round( hue(h0, m1, m2) * 255 );
-	b = round( hue(h0 - 1.0/3, m1, m2) * 255 );
+	r = round( hue(h + 1.0/3, m1, m2) * 255 );
+	g = round( hue(h, m1, m2) * 255 );
+	b = round( hue(h - 1.0/3, m1, m2) * 255 );
 
-	return RGB( r, g, b);
+	return RGB(r, g, b);
 }
 
 double ColorPicker::hue(double h0, double m1, double m2){
