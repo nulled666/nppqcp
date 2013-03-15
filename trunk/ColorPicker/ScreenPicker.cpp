@@ -8,7 +8,7 @@
 #define MASK_WIN_CLASS L"nplus_screen_picker"
 #define INFO_WINDOW_WIDTH 180
 #define INFO_WINDOW_HEIGHT 100
-#define SWATCH_BG_COLOR 0x666666
+#define CONTROL_BORDER_COLOR 0x666666
 
 ScreenPicker::ScreenPicker(COLORREF color){
 
@@ -225,7 +225,7 @@ void ScreenPicker::SampleColor(int x, int y){
 	rc.top = 6;
 	rc.right = 172;
 	rc.bottom = 32;
-	brush = ::CreateSolidBrush(SWATCH_BG_COLOR);
+	brush = ::CreateSolidBrush(CONTROL_BORDER_COLOR);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
