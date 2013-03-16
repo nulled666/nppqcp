@@ -9,6 +9,7 @@
 #define INFO_WINDOW_WIDTH 180
 #define INFO_WINDOW_HEIGHT 100
 #define CONTROL_BORDER_COLOR 0x666666
+#define IDK_HIDE 101
 
 ScreenPicker::ScreenPicker(COLORREF color){
 
@@ -100,10 +101,6 @@ LRESULT CALLBACK ScreenPicker::MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM
 BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {
-		case WM_CREATE:
-		{
-			::RegisterHotKey(_mask_window, 1, 0, VK_ESCAPE);
-		}
 		case WM_MOUSEMOVE:
 		{
 			::SetCursor(_cursor);
@@ -155,6 +152,8 @@ void ScreenPicker::Start(){
 
 	_is_shown = true;
 
+	::RegisterHotKey(_mask_window, IDK_HIDE, 0, VK_ESCAPE);
+
 }
 
 void ScreenPicker::End(){
@@ -163,6 +162,8 @@ void ScreenPicker::End(){
 	::ShowWindow(_info_window, SW_HIDE);
 
 	_is_shown = false;
+
+	::UnregisterHotKey(_mask_window, IDK_HIDE);
 
 }
 

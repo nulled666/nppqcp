@@ -731,7 +731,7 @@ void ColorPicker::GenerateAdjustColors(const COLORREF color){
 	HSLCOLOR hsl = rgb2hsl(color);
 	COLORREF cc = hsl2rgb(hsl);
 
-	double q[] = {-20.0, -10.0, -5.0, -2.5, 0 , 2.5, 5.0, 10.0, 20.0};
+	double q[] = {20.0, 10.0, 5.0, 2.0, 0 , -2.0, -5.0, -10.0, -20.0};
 
 	for(int i=0; i<ADJUST_ZONE_ROW; i++){
 		if(q[i]==0){
