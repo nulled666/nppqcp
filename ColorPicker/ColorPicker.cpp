@@ -491,7 +491,7 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 	color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
 	
 	HSLCOLOR hsl = rgb2hsl(color);
-	wchar_t output[28];
+	wchar_t output[60];
 	wsprintf(output, L"#%06X   HSL(%d,%d%%,%d%%)", color, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
