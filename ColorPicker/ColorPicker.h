@@ -157,7 +157,6 @@ class ColorPicker {
 
 		COLORREF _color_palette_data[PALETTE_ROW+1][PALETTE_COLUMN+1];
 		COLORREF _recent_color_data[RECENT_ZONE_ROW*RECENT_ZONE_COLUMN];
-		COLORREF _adjust_color_data[3][ADJUST_ZONE_ROW];
 
 		RECT _rect_palette;
 
@@ -170,7 +169,10 @@ class ColorPicker {
 
 		RECT _rect_adjust_buttons;
 
+		COLORREF _adjust_color_data[3][ADJUST_ZONE_ROW];
 		COLORREF _adjust_color;
+		double _adjust_preserved_hue;
+		double _adjust_preserved_saturation;
 		int _adjust_center_row;
 		int _adjust_row;
 		int _adjust_index;
