@@ -34,6 +34,9 @@ ColorPicker::ColorPicker(COLORREF color) {
 	_previous_index = -1;
 
 	_adjust_color = _old_color;
+	_adjust_preserved_hue = 0;
+	_adjust_preserved_saturation = 0;
+
 	_adjust_center_row = 0;
 	_adjust_row = -1;
 	_adjust_index = -1;
@@ -729,7 +732,20 @@ void ColorPicker::PaletteMouseClick(const POINT p, bool is_right_button){
 void ColorPicker::GenerateAdjustColors(const COLORREF color){
 
 	HSLCOLOR hsl = rgb2hsl(color);
-	COLORREF cc = hsl2rgb(hsl);
+	
+	// preserve color hue after converting between rgb & hsl
+	if(hsl.s==0){
+		hsl.h = _adjust_preserved_hue;
+	}else{
+		_adjust_preserved_hue = hsl.h;
+	}
+
+	// increase the saturation to avoid color lost on extreme lightness
+	if(hsl.l==0 || hsl.l==1.0){
+		hsl.s = _adjust_preserved_saturation;
+	}else{
+		_adjust_preserved_saturation = hsl.s;
+	}
 
 	double q[] = {20.0, 10.0, 5.0, 2.0, 0 , -2.0, -5.0, -10.0, -20.0};
 
