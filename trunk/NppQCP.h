@@ -8,7 +8,7 @@
 const TCHAR NPP_PLUGIN_NAME[] = TEXT("Quick Color Picker +");
 const TCHAR NPP_PLUGIN_VER[] = TEXT("1.0");
 
-const int _command_count = 3;
+const int _command_count = 4;
 
 void AttachDll(HANDLE module);
 
@@ -26,6 +26,7 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 
 ////////////////////////////////////////////
 void ToggleQCP();
+void ToggleColorHighlight();
 void VisitWebsite();
 
 HWND GetScintilla();
