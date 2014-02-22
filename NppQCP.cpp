@@ -436,8 +436,9 @@ bool CheckForHexColor(const HWND h_scintilla, const int start, const int end){
 		return false;
 
 	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
+
 	// break - next char is still hex char
-	if (strchr("01234567890abcdefABCDEF", next_char) != NULL)
+	if (next_char != 0 && strchr("01234567890abcdefABCDEF", next_char) != NULL)
 		return false;
 
 	// passed -
@@ -572,7 +573,7 @@ void WriteColor(COLORREF color) {
 	char buff[100];
 
 	if(_rgb_selected){
-		sprintf(buff, "%d, %d, %d", GetRValue(color), GetGValue(color), GetBValue(color));
+		sprintf(buff, "%d,%d,%d", GetRValue(color), GetGValue(color), GetBValue(color));
 		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _rgb_start, 0);
 		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _rgb_end, 0);
 	}else{
@@ -651,7 +652,7 @@ void HighlightColorCode() {
     int first_visible_line = ::SendMessage(h_scintilla, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int last_line = first_visible_line + (int)::SendMessage(h_scintilla, SCI_LINESONSCREEN, 0, 0);
 
-	first_visible_line = first_visible_line - 1; // i don't know why
+	//first_visible_line = first_visible_line - 1; // i don't know why
 
     int start_position = 0;
 	if(first_visible_line>1)
@@ -679,26 +680,37 @@ void HighlightHexColor(const HWND h_scintilla, const int start_position, const i
 
     while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
 
-		char regexp[] = "(?:#)([0-9a-fA-F]{3,6})(?:[^0-9a-fA-F])";
+		Sci_TextToFind tf;
+		tf.chrg.cpMin = search_start;
+		tf.chrg.cpMax = end_position+1;
+		tf.lpstrText = "#";
 
-		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
-		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
-		::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
-        ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
-		int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
+		int target_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
 
 		// not found
 		if(target_pos == -1) {
 			break;
 		}
 
+		// read in the possible color code sequence
 		char hex_color[8];
-		::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&hex_color);
 
+		int index = 0;
+		for(; index<6; index++){
+			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos+1 + index, 0);
+			if( t=='\0' )
+				break;
+			if( strchr("0123456789abcdefABCDEF", t) == NULL )
+				break;
+			hex_color[index] = t;
+		}
+
+		hex_color[index] = '\0';
+
+		// align the positions
         int target_length = strlen(hex_color);
         int target_start = target_pos;
         int target_end = target_pos + target_length + 1; // don't forget the '#'
-
 
 		// invalid hex color length
         if (target_length !=3 && target_length != 6) {
@@ -799,6 +811,8 @@ bool HighlightCode(const HWND h_scintilla, const COLORREF color, const int start
 
 	// mark text with indicateors
     int indicator_id = -1;
+
+	//TODO: NPPM_ALLOCATESUPPORTED, NPPM_ALLOCATEMARKER
 
 	// search for exist indicator with same color
 	int index = INDIC_CONTAINER;
