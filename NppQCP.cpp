@@ -27,7 +27,8 @@ bool doCloseTag;
 #define MAX_COLOR_CODE_HIGHTLIGHT 50
 
 const wchar_t _ini_section[] = L"nppqcp";
-const wchar_t _ini_key[] = L"enabled";
+const wchar_t _ini_key_enable[] = L"enabled";
+const wchar_t _ini_key_highlight[] = L"highlight";
 const wchar_t _ini_file[] = L"nppqcp.ini";
 TCHAR _ini_file_path[MAX_PATH];
 
@@ -37,6 +38,7 @@ HINSTANCE _instance;
 HWND _message_window;
 
 bool _enable_qcp = false;
+bool _enable_qcp_highlight = false;
 bool _is_color_picker_shown = false;
 
 bool _rgb_selected = false;
@@ -98,18 +100,29 @@ void LoadConfig(){
 	PathAppend(_ini_file_path, _ini_file);
 
 	// read in config
-	int enabled = ::GetPrivateProfileInt(_ini_section, _ini_key, 5, _ini_file_path);
+	int enabled = ::GetPrivateProfileInt(_ini_section, _ini_key_enable, 5, _ini_file_path);
 	if(enabled == 5)
 		enabled = 1;
 	_enable_qcp = ( enabled == 1);
+
+	enabled = ::GetPrivateProfileInt(_ini_section, _ini_key_highlight, 5, _ini_file_path);
+	if(enabled == 5)
+		enabled = 1;
+	_enable_qcp_highlight = ( enabled == 1);
 
 }
 
 void SaveConfig(){
 
 	::WritePrivateProfileString(
-		_ini_section, _ini_key,
+		_ini_section, _ini_key_enable,
 		_enable_qcp ? L"1" : L"0",
+		_ini_file_path
+	);
+
+	::WritePrivateProfileString(
+		_ini_section, _ini_key_highlight,
+		_enable_qcp_highlight ? L"1" : L"0",
 		_ini_file_path
 	);
 
@@ -127,9 +140,9 @@ void InitCommandMenu() {
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
     //            bool checkOnInit                // optional. Make this menu item be checked visually
     //            );
-
 	setCommand(0, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
 	setCommand(1, L"---", NULL, NULL, false);
+	setCommand(2, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
 
 	// get version
 	WCHAR fileName[_MAX_PATH];
@@ -161,7 +174,8 @@ void InitCommandMenu() {
 	wcscat(text, L" (Version ");
 	wcscat(text, version);
 	wcscat(text, L")");
-	setCommand(2, text, VisitWebsite, NULL, FALSE);
+
+	setCommand(3, text, VisitWebsite, NULL, FALSE);
 
 }
 
@@ -190,7 +204,7 @@ void commandMenuCleanUp() {
 // MENU COMMANDS
 ///////////////////////////////////////////////////////////
 
-// toggle QCP plugins
+// toggle QCP plugin
 void ToggleQCP() {
 
 	_enable_qcp = !_enable_qcp;
@@ -205,6 +219,17 @@ void ToggleQCP() {
 	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[0]._cmdID, MF_BYCOMMAND | (_enable_qcp ? MF_CHECKED : MF_UNCHECKED));
 
 }
+
+
+// toggle color highlight
+void ToggleColorHighlight() {
+
+	_enable_qcp_highlight = !_enable_qcp_highlight;
+
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[2]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
+
+}
+
 
 // visit nppqcp website
 void VisitWebsite() {
@@ -608,7 +633,7 @@ void SaveRecentColor(){
 ////////////////////////////////////////////////////////////////////////////////
 void HighlightColorCode() {
 
-	if(!_enable_qcp)
+	if(!_enable_qcp || !_enable_qcp_highlight)
 		return;
 
 	int lang = -100;
@@ -654,7 +679,7 @@ void HighlightHexColor(const HWND h_scintilla, const int start_position, const i
 
     while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
 
-		char regexp[] = "(?:#)([0-9abcdefABCDEF]{3,6})(?:[^0-9abcdefABCDEF])";
+		char regexp[] = "(?:#)([0-9a-fA-F]{3,6})(?:[^0-9a-fA-F])";
 
 		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
 		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
