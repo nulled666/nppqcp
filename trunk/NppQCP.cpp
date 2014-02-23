@@ -228,6 +228,12 @@ void ToggleColorHighlight() {
 
 	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[2]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
 
+	if (_enable_qcp_highlight) {
+		HighlightColorCode();
+	} else {
+		RemoveColorHighlight();
+	}
+
 }
 
 
@@ -652,7 +658,7 @@ void HighlightColorCode() {
     int first_visible_line = ::SendMessage(h_scintilla, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int last_line = first_visible_line + (int)::SendMessage(h_scintilla, SCI_LINESONSCREEN, 0, 0);
 
-	//first_visible_line = first_visible_line - 1; // i don't know why
+	first_visible_line = first_visible_line - 1; // i don't know why - but this fix the missing color
 
     int start_position = 0;
 	if(first_visible_line>1)
@@ -812,8 +818,6 @@ bool HighlightCode(const HWND h_scintilla, const COLORREF color, const int start
 	// mark text with indicateors
     int indicator_id = -1;
 
-	//TODO: NPPM_ALLOCATESUPPORTED, NPPM_ALLOCATEMARKER
-
 	// search for exist indicator with same color
 	int index = INDIC_CONTAINER;
     while (index <= _indicator_count) {
@@ -829,7 +833,7 @@ bool HighlightCode(const HWND h_scintilla, const COLORREF color, const int start
 
 		indicator_id = _indicator_count;
 
-		::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_PLAIN);
+		::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_COMPOSITIONTHICK);
 		::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator_id, (LPARAM)true);
 		::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator_id, (LPARAM)color);
 		::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator_id, (LPARAM)255);
@@ -853,8 +857,8 @@ void RemoveColorHighlight() {
     
     int length = ::SendMessage(h_scintilla, SCI_GETTEXT, 0, 0);
     int i = INDIC_CONTAINER;
-    while (i <= _indicator_count) {
-		_indicator_colors[i] = -1;
+    while (i <= INDIC_MAX) {
+		_indicator_colors[i] = NULL;
         ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, i, 0);
         ::SendMessage(h_scintilla, SCI_INDICATORCLEARRANGE, 0, length);
         i++;
