@@ -1,3 +1,7 @@
+= v1.2.0 =
+  * Fixed a critical crash on new versions of Notepad++
+  * Added option for disable color highlight
+
 = v1.1.0 =
   * NEW! Quick HSL Color Tuning
   * right-click on palette color to put the color into tuning swatch
