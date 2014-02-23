@@ -141,8 +141,8 @@ void InitCommandMenu() {
     //            bool checkOnInit                // optional. Make this menu item be checked visually
     //            );
 	setCommand(0, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
-	setCommand(1, L"---", NULL, NULL, false);
-	setCommand(2, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
+	setCommand(1, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
+	setCommand(2, L"---", NULL, NULL, false);
 
 	// get version
 	WCHAR fileName[_MAX_PATH];
@@ -161,11 +161,10 @@ void InitCommandMenu() {
 	UINT    			len = 0;
 	VS_FIXEDFILEINFO*   vsfi = NULL;
 	VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
-	wsprintf(version, L"%d.%d.%d.%d",
+	wsprintf(version, L"%d.%d.%d",
 		HIWORD(vsfi->dwFileVersionMS),
 		LOWORD(vsfi->dwFileVersionMS),
-		HIWORD(vsfi->dwFileVersionLS),
-		LOWORD(vsfi->dwFileVersionLS)
+		HIWORD(vsfi->dwFileVersionLS)
 	);
 	delete[] versionInfo;
 
