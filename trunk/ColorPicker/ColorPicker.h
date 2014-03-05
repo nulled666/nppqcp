@@ -194,7 +194,7 @@ class ColorPicker {
 		void PaintAll();
 
 		// color preview
-		void PaintColotSwatch();
+		void PaintColorSwatch();
 		void DisplayNewColor(COLORREF color);
 		
 		// palette
