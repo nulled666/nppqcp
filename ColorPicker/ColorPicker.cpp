@@ -438,7 +438,7 @@ bool ColorPicker::PointInRect(const POINT p, const RECT rc) {
 
 void ColorPicker::PaintAll(){
 	PaintColorPalette();
-	PaintColotSwatch();
+	PaintColorSwatch();
 	PaintAdjustZone();
 }
 
@@ -446,7 +446,7 @@ void ColorPicker::PaintAll(){
 // COLOR SWATCHES
 ///////////////////////////////////////////////////////////////////
 
-void ColorPicker::PaintColotSwatch() {
+void ColorPicker::PaintColorSwatch() {
 	
 	// paint swatch /////////
 	HDC hdc_win = ::GetDC(_color_popup);
@@ -498,7 +498,7 @@ void ColorPicker::DisplayNewColor(COLORREF color){
 	wsprintf(output, L"#%06X   HSL(%d,%d%%,%d%%)", color, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
-	PaintColotSwatch();
+	PaintColorSwatch();
 
 }
 
