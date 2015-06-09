@@ -9,10 +9,8 @@ v1.2.0
 * Fixed a critical crash on new versions of Notepad++
 * Added option for disable color highlight
 
-v1.1.1
-* Optimized color tuning
-* Removed ESC hotkey capture after closing screen picker
-* View Full Changelog
+[View Full Changelog](https://github.com/nulled666/nppqcp/blob/wiki/Changelog.md)
+
 
 ![Screenshot](https://s3-ap-southeast-1.amazonaws.com/nppqcp/features-1.2.0.png)
 
