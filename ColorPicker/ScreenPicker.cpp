@@ -130,7 +130,7 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 	
 }
 
-void ScreenPicker::Color(COLORREF color){
+void ScreenPicker::SetColor(COLORREF color){
 	_old_color = color;
 }
 

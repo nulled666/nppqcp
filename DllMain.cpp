@@ -55,11 +55,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 			commandMenuCleanUp();
 			break;
 		}
+		case SCN_PAINTED:
+		{
+			HighlightColorCode();
+		}
 		case SCN_UPDATEUI:
 		{
-			if (notifyCode->updated & SC_UPDATE_V_SCROLL) {
-				HighlightColorCode();
-			}
 			if (notifyCode->updated & SC_UPDATE_SELECTION ) {
 				if (!HasSelection())
 					HideColorPicker();
@@ -80,7 +81,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 		{
 			if (notifyCode->modificationType & SC_MOD_DELETETEXT
 				|| notifyCode->modificationType & SC_MOD_INSERTTEXT) {
-                HighlightColorCode();
 				HideColorPicker();
             }
             break;
@@ -88,7 +88,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 		case NPPN_LANGCHANGED:
 		case NPPN_BUFFERACTIVATED:
 		{
-            HighlightColorCode();
 			HideColorPicker();
             break;
 		}

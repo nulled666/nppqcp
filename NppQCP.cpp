@@ -211,7 +211,7 @@ void ToggleQCP() {
 	if (_enable_qcp) {
 		HighlightColorCode();
 	} else {
-		RemoveColorHighlight();
+		//RemoveColorHighlight();
 		HideColorPicker();
 	}
 
@@ -225,12 +225,12 @@ void ToggleColorHighlight() {
 
 	_enable_qcp_highlight = !_enable_qcp_highlight;
 
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[2]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[1]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
 
 	if (_enable_qcp_highlight) {
 		HighlightColorCode();
 	} else {
-		RemoveColorHighlight();
+		CleanUnderline();
 	}
 
 }
@@ -239,7 +239,7 @@ void ToggleColorHighlight() {
 // visit nppqcp website
 void VisitWebsite() {
 
-	wchar_t url[200] = L"http://code.google.com/p/nppqcp/";
+	wchar_t url[200] = L"https://github.com/nulled666/nppqcp/";
 	::ShellExecute(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
 
 }
@@ -536,7 +536,7 @@ bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
 		CreateColorPicker();
 
 	// put current color to picker
-	_pColorPicker->Color(color);
+	_pColorPicker->SetColor(color);
 
 	return true;
 
@@ -648,8 +648,6 @@ void HighlightColorCode() {
 	if (lang != L_CSS && lang != L_JS && lang != L_HTML) {
         return;
     }
-    
-    RemoveColorHighlight();
 
     HWND h_scintilla = GetScintilla();
 
@@ -669,8 +667,8 @@ void HighlightColorCode() {
 	int current_target_start = ::SendMessage(h_scintilla, SCI_GETTARGETSTART, 0, 0);
 	int current_target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
 
-	HighlightHexColor(h_scintilla, start_position, end_position);
-	HighlightRgbColor(h_scintilla, start_position, end_position);
+	FindHexColor(h_scintilla, start_position, end_position);
+	FindRgbColor(h_scintilla, start_position, end_position);
 
 	// restore target range
 	::SendMessage(h_scintilla, SCI_SETTARGETSTART, current_target_start, 0);
@@ -678,7 +676,7 @@ void HighlightColorCode() {
 
 }
 
-void HighlightHexColor(const HWND h_scintilla, const int start_position, const int end_position){
+void FindHexColor(const HWND h_scintilla, const int start_position, const int end_position){
 
 	int match_count = 0;
 	int search_start = start_position;
@@ -738,11 +736,7 @@ void HighlightHexColor(const HWND h_scintilla, const int start_position, const i
 		COLORREF color = strtol(hex_color, NULL, 16);
 		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
 
-		bool can_proceed = HighlightCode(h_scintilla, color, target_start, target_end);
-
-		// exceeded the indicator count
-		if(!can_proceed)
-			break;
+		DrawUnderline(h_scintilla, color, target_start, target_end);
 
 		search_start = target_end; // move on
         match_count++;
@@ -751,7 +745,7 @@ void HighlightHexColor(const HWND h_scintilla, const int start_position, const i
 
 }
 
-void HighlightRgbColor(const HWND h_scintilla, const int start_position, const int end_position){
+void  FindRgbColor(const HWND h_scintilla, const int start_position, const int end_position){
 
 	int match_count = 0;
 	int search_start = start_position;
@@ -793,11 +787,7 @@ void HighlightRgbColor(const HWND h_scintilla, const int start_position, const i
         // parse hex color string to COLORREF
 		COLORREF color = RGB(ir, ig, ib);
 
-		bool can_proceed = HighlightCode(h_scintilla, color, target_start, target_end);
-
-		// exceeded the indicator count
-		if(!can_proceed)
-			break;
+		DrawUnderline(h_scintilla, color, target_start, target_end);
 
 		search_start = target_end; // move on
         match_count++;
@@ -807,62 +797,39 @@ void HighlightRgbColor(const HWND h_scintilla, const int start_position, const i
 }
 
 
-bool HighlightCode(const HWND h_scintilla, const COLORREF color, const int start, int end){
-
-	if(_indicator_count > INDIC_MAX)
-		return false;
-
+void DrawUnderline(const HWND h_scintilla, const COLORREF color, const int start, int end) {
+	
 	int length = end - start;
 
-	// mark text with indicateors
-    int indicator_id = -1;
+	int start_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, start);
+	int start_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, start);
+	int end_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, end);
+	int end_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, end);
 
-	// search for exist indicator with same color
-	int index = INDIC_CONTAINER;
-    while (index <= _indicator_count) {
-        if (color == _indicator_colors[index]) {
-            indicator_id = index;
-            break;
-        }
-        index++;
-    }
+	int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT, 0, 0);
 
-	// not found - create new indicator
-    if (indicator_id == -1 ) {
+	// paint swatch /////////
+	HDC hdc_editor = ::GetDC(h_scintilla);
+	RECT rc;
+	HBRUSH brush;
 
-		indicator_id = _indicator_count;
-
-		::SendMessage(h_scintilla, SCI_INDICSETSTYLE, indicator_id, INDIC_COMPOSITIONTHICK);
-		::SendMessage(h_scintilla, SCI_INDICSETUNDER, indicator_id, (LPARAM)true);
-		::SendMessage(h_scintilla, SCI_INDICSETFORE, indicator_id, (LPARAM)color);
-		::SendMessage(h_scintilla, SCI_INDICSETALPHA, indicator_id, (LPARAM)255);
-
-		_indicator_colors[_indicator_count] = color;
-        _indicator_count++;
-
-    }
-
-	// set indicator
-    ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, indicator_id, 0);
-    ::SendMessage(h_scintilla, SCI_INDICATORFILLRANGE, start, length);
-
-	return true;
+	// new color
+	rc.left = start_x;
+	rc.right = end_x;
+	rc.top = start_y + line_height;
+	rc.bottom = rc.top + 2;
+	brush = ::CreateSolidBrush(color);
+	::FillRect(hdc_editor, &rc, brush);
+	::DeleteObject(brush);
+	
+	::ReleaseDC(h_scintilla, hdc_editor);
 
 }
 
-void RemoveColorHighlight() {
 
-    HWND h_scintilla = GetScintilla();
-    
-    int length = ::SendMessage(h_scintilla, SCI_GETTEXT, 0, 0);
-    int i = INDIC_CONTAINER;
-    while (i <= INDIC_MAX) {
-		_indicator_colors[i] = NULL;
-        ::SendMessage(h_scintilla, SCI_SETINDICATORCURRENT, i, 0);
-        ::SendMessage(h_scintilla, SCI_INDICATORCLEARRANGE, 0, length);
-        i++;
-    }
-
-	_indicator_count = INDIC_CONTAINER;
+void CleanUnderline() {
+	
+	HWND h_scintilla = GetScintilla();
+	::RedrawWindow(h_scintilla, NULL, NULL, RDW_INVALIDATE);
 
 }

@@ -16,7 +16,7 @@ public:
 		return (_mask_window != NULL);
 	}
 	
-	void Color(COLORREF color);
+	void SetColor(COLORREF color);
 
 	void Start();
 	void End();

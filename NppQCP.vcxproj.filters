@@ -50,6 +50,9 @@
     <ClInclude Include="ColorPicker\ScreenPicker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="NppQCP.vcproj" />

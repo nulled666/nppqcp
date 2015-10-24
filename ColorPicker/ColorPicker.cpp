@@ -83,7 +83,7 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 }
 
 
-void ColorPicker::Color(COLORREF color, bool is_rgb) {
+void ColorPicker::SetColor(COLORREF color, bool is_rgb) {
 	
 	if (is_rgb) {
 		color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
@@ -127,7 +127,7 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 	// convert to color value - color order is invert to COLORREF
 	COLORREF rgb = wcstol(hex_copy, NULL, 16);
 
-	Color(rgb, true);
+	SetColor(rgb, true);
 
 	return true;
 
@@ -940,7 +940,7 @@ void ColorPicker::StartPickScreenColor(){
 		_pScreenPicker->Create(_instance, _color_popup);
 	}
 
-	_pScreenPicker->Color(_old_color);
+	_pScreenPicker->SetColor(_old_color);
 	_pScreenPicker->Start();
 
 }

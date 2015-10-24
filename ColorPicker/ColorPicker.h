@@ -5,7 +5,7 @@ USAGE:
 	create and show:
 		ColorPicker* pColorPicker = new ColorPicker();
 		pColorPicker->Create(hInstance, hwndParent);
-		pColorPicker->Color(RGB(255,0,128));
+		pColorPicker->SetColor(RGB(255,0,128));
 		pColorPicker->SetParentRect(rc);
 		pColorPicker->Show();
 
@@ -124,8 +124,8 @@ class ColorPicker {
 	
     
 		// Other stuffs here
-		void Color(COLORREF color, bool is_rgb = false);
-		COLORREF Color(){
+		void SetColor(COLORREF color, bool is_rgb = false);
+		COLORREF GetColor(){
 			return _old_color;
 		}
 
