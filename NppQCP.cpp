@@ -668,7 +668,7 @@ void HighlightColorCode() {
 	int current_target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
 
 	FindHexColor(h_scintilla, start_position, end_position);
-	FindRgbColor(h_scintilla, start_position, end_position);
+	FindBracketColor(h_scintilla, start_position, end_position);
 
 	// restore target range
 	::SendMessage(h_scintilla, SCI_SETTARGETSTART, current_target_start, 0);
@@ -744,6 +744,90 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
     }
 
 }
+
+
+void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position) {
+
+	int match_count = 0;
+	int search_start = start_position;
+	int search_end = end_position + 1;
+
+	char suff[] = "rgba(";
+	int suff_len = strlen(suff) - 1;
+
+	while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
+
+		Sci_TextToFind tf;
+		tf.chrg.cpMin = search_start;
+		tf.chrg.cpMax = search_end;
+		tf.lpstrText = suff;
+
+		int start_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
+
+		// not found
+		if (start_pos == -1) {
+			break;
+		}
+
+		start_pos = start_pos + suff_len + 1;
+
+		search_start = start_pos; // move forward
+
+		tf.chrg.cpMin = search_start;
+		tf.chrg.cpMax = search_end;
+		tf.lpstrText = ")";
+
+		int end_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
+
+		// no close bracket found - stop searching
+		if (end_pos == -1) {
+			break;
+		}
+
+		search_start = end_pos + 1; // move forward
+
+		// too short or too long - continue
+		int len = end_pos - start_pos;
+		if ( len < 5 || len > 25) {
+			continue;
+		}
+
+		// read in segments and parse
+		char buffer[4][10];
+		bool parse_ok = true;
+		int seg_index = 0;
+		int char_index = 0;
+
+		for (int i = start_pos; i < end_pos; i++) {
+
+			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, i, 0);
+
+			// end of text or segment too long
+			if (t == '\0' || char_index > 9) {
+				break;
+			}
+
+			// end of segment, put and continue
+			if (t == ',' || t == ')') {
+				buffer[seg_index][char_index] = '\0';
+				seg_index++;
+				char_index = 0;
+				continue;
+			}
+
+			buffer[seg_index][char_index] = t;
+
+			char_index++;
+
+		}
+
+		buffer[0];
+
+	}
+
+}
+
+
 
 void  FindRgbColor(const HWND h_scintilla, const int start_position, const int end_position){
 

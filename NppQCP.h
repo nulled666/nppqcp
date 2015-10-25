@@ -56,7 +56,7 @@ void SaveRecentColor();
 void HighlightColorCode();
 
 void FindHexColor(const HWND h_scintilla, const int start_position, const int end_position);
-void FindRgbColor(const HWND h_scintilla, const int start_position, const int end_position);
+void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position);
 
 void DrawUnderline(const HWND h_scintilla, const COLORREF color, const int start, const int end);
 void CleanUnderline();
