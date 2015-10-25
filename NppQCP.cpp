@@ -757,6 +757,9 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 
 	while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
 
+		int target_start = 0;
+		int target_end = 0;
+
 		Sci_TextToFind tf;
 		tf.chrg.cpMin = search_start;
 		tf.chrg.cpMax = search_end;
@@ -768,6 +771,8 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 		if (start_pos == -1) {
 			break;
 		}
+
+		target_start = start_pos;
 
 		start_pos = start_pos + suff_len + 1;
 
@@ -784,7 +789,9 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 			break;
 		}
 
-		search_start = end_pos + 1; // move forward
+		target_end = end_pos + 1;
+
+		search_start = target_end; // move forward
 
 		// too short or too long - continue
 		int len = end_pos - start_pos;
@@ -821,11 +828,32 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 
 		}
 
-		buffer[0];
+		// convert string to numbers
+		bool is_ok = true;
+		int nums[4];
+		for (int i = 0; i < 3; i++) {
+
+			nums[i] = strtol(buffer[i], nullptr, 10);
+
+			if (nums[i] > 255) {
+				is_ok = false;
+				break;
+			}
+
+		}
+
+		if (!is_ok)
+			continue;
+
+		// parse hex color string to COLORREF
+		COLORREF color = RGB(nums[0], nums[1], nums[2]);
+
+		DrawUnderline(h_scintilla, color, target_start, target_end);
 
 	}
 
 }
+
 
 
 
