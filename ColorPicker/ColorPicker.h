@@ -37,7 +37,7 @@ USAGE:
 #define PALETTE_Y CONTROL_PADDING
 #define PALETTE_ROW 14
 #define PALETTE_COLUMN 24
-#define PALETTE_CELL_SIZE 9
+#define PALETTE_CELL_SIZE 12
 #define PALETTE_WIDTH (PALETTE_COLUMN * PALETTE_CELL_SIZE)
 #define PALETTE_HEIGHT (PALETTE_ROW * PALETTE_CELL_SIZE)
 
@@ -48,8 +48,8 @@ USAGE:
 #define ADJUST_ZONE_X (PALETTE_X + PALETTE_WIDTH + CONTROL_PADDING)
 #define ADJUST_ZONE_Y CONTROL_PADDING
 #define ADJUST_ZONE_ROW 9
-#define ADJUST_ZONE_CELL_WIDTH 10
-#define ADJUST_ZONE_CELL_HEIGHT 11
+#define ADJUST_ZONE_CELL_WIDTH 12
+#define ADJUST_ZONE_CELL_HEIGHT 12
 #define ADJUST_ZONE_WIDTH (ADJUST_ZONE_CELL_WIDTH*3+2)
 #define ADJUST_ZONE_HEIGHT (ADJUST_ZONE_CELL_HEIGHT*ADJUST_ZONE_ROW)
 
@@ -60,8 +60,8 @@ USAGE:
 
 #define BUTTON_X CONTROL_PADDING
 #define BUTTON_Y (PALETTE_HEIGHT + CONTROL_PADDING*2 + 1)
-#define BUTTON_WIDTH 28
-#define BUTTON_HEIGHT 28
+#define BUTTON_WIDTH 32
+#define BUTTON_HEIGHT 32
 
 #define TEXT_X (BUTTON_X + BUTTON_WIDTH*2 + CONTROL_PADDING*2)
 #define TEXT_Y (BUTTON_Y + (BUTTON_HEIGHT-12)/2)
@@ -124,13 +124,13 @@ class ColorPicker {
 	
     
 		// Other stuffs here
-		void SetColor(COLORREF color, bool is_rgb = false);
+		void SetColor(COLORREF color);
 		COLORREF GetColor(){
 			return _old_color;
 		}
 
-		bool SetHexColor(const wchar_t* hex_color);
-		void GetHexColor(wchar_t* out);
+		bool SetHexColor(const char* hex_color);
+		void GetHexColor(char* out_hex, int buffer_size);
 
 		void SetRecentColor(const COLORREF* colors);
 		void GetRecentColor(COLORREF* &colors);

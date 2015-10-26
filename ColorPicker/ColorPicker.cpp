@@ -83,11 +83,7 @@ void ColorPicker::Create(HINSTANCE instance, HWND parent, HWND message_window) {
 }
 
 
-void ColorPicker::SetColor(COLORREF color, bool is_rgb) {
-	
-	if (is_rgb) {
-		color = RGB(GetBValue(color), GetGValue(color), GetRValue(color));
-	}
+void ColorPicker::SetColor(COLORREF color) {
 	
 	_old_color = color;
 	_adjust_color = _old_color;
@@ -97,21 +93,21 @@ void ColorPicker::SetColor(COLORREF color, bool is_rgb) {
 
 }
 
-bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
+bool ColorPicker::SetHexColor(const char* hex_color) {
 
 	// check length
-	size_t len = wcslen(hex_color);
+	size_t len = strlen(hex_color);
 	if(len != 3 && len != 6)
 		return false;
 
 	// check hex string
-	wchar_t hex_copy[16];
-	wcscpy(hex_copy, hex_color);
-	bool is_hex = (wcstok(hex_copy, L"0123456789ABCDEFabcdef") == NULL);
+	char hex_copy[16];
+	strcpy(hex_copy, hex_color);
+	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
 	if(!is_hex)
 		return false;
 
-	wcscpy(hex_copy, hex_color);
+	strcpy(hex_copy, hex_color);
 
 	// pad 3 char hex
 	if (len==3) {
@@ -124,14 +120,29 @@ bool ColorPicker::SetHexColor(const wchar_t* hex_color) {
 		hex_copy[6] = L'\0';
 	}
 
-	// convert to color value - color order is invert to COLORREF
-	COLORREF rgb = wcstol(hex_copy, NULL, 16);
+	// convert to color value - color order is inverted
+	COLORREF bgr = strtol(hex_copy, NULL, 16);
+	
+	COLORREF rgb = RGB(GetBValue(bgr), GetGValue(bgr), GetRValue(bgr));
 
-	SetColor(rgb, true);
+	SetColor(rgb);
 
 	return true;
 
 }
+
+void ColorPicker::GetHexColor(char* out_hex, int buffer_size) {
+
+	// check length
+	if (buffer_size < 7) {
+		return;
+	}
+
+	COLORREF color = RGB(GetBValue(_old_color), GetGValue(_old_color), GetRValue(_old_color));
+	sprintf(out_hex, "%0*X", 6, color);
+
+}
+
 
 void ColorPicker::SetRecentColor(const COLORREF *colors){
 

@@ -395,10 +395,10 @@ bool ShowColorPicker(){
 		return false;
 
 	_rgb_selected = false;
-	bool result = CheckForHexColor(h_scintilla, selection_start, selection_end);
+	bool result = CheckSelectionForHexColor(h_scintilla, selection_start, selection_end);
 
 	if(!result){
-		result = CheckForRgbColor(h_scintilla, selection_start, selection_end);
+		result = CheckSelectionForRgbColor(h_scintilla, selection_start, selection_end);
 		_rgb_selected = result;
 	}
 
@@ -429,7 +429,7 @@ bool ShowColorPicker(){
 }
 
 
-bool CheckForHexColor(const HWND h_scintilla, const int start, const int end){
+bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const int end){
 	
 	int len = end - start;
 
@@ -458,12 +458,8 @@ bool CheckForHexColor(const HWND h_scintilla, const int start, const int end){
 	char hex_str[10];
     ::SendMessage(h_scintilla, SCI_GETSELTEXT, 0, (LPARAM)&hex_str);
 
-	wchar_t hex_color[20];
-
-	::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, hex_str, -1, hex_color, sizeof(hex_str));
-
 	// put current color to picker
-	if (!_pColorPicker->SetHexColor(hex_color)) {
+	if (!_pColorPicker->SetHexColor(hex_str)) {
 		// not a valid hex color string
 		return false;
 	}
@@ -472,7 +468,7 @@ bool CheckForHexColor(const HWND h_scintilla, const int start, const int end){
 
 }
 
-bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end){
+bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const int end){
 	
 	int len = end - start;
 
@@ -584,9 +580,8 @@ void WriteColor(COLORREF color) {
 		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _rgb_start, 0);
 		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _rgb_end, 0);
 	}else{
-		// convert to rgb order
-		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
-		sprintf(buff, "%0*X", 6, color);
+		// get hex string
+		_pColorPicker->GetHexColor(buff, sizeof(buff));
 	}
 		
 	::SendMessage(h_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
@@ -709,7 +704,7 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
 		hex_color[0] = '#';
 
 		int index = 1;
-		for(; index < 7; index++){
+		for(; index < 9; index++){
 			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos + index, 0);
 			if( t=='\0' )
 				break;

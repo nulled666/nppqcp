@@ -46,8 +46,8 @@ bool ShowColorPicker();
 void HideColorPicker();
 bool HasSelection();
 
-bool CheckForHexColor(const HWND h_scintilla, const int start, const int end);
-bool CheckForRgbColor(const HWND h_scintilla, const int start, const int end);
+bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const int end);
+bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const int end);
 
 void WriteColor(COLORREF color);
 
