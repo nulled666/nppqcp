@@ -5,7 +5,11 @@
 #include "ColorPicker\ColorPicker.h"
 #include "ColorPicker\ColorPicker.res.h"
 
+#include "csscolorparser.hpp"
+
 #include <iostream>
+#include <vector>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -24,13 +28,17 @@ bool doCloseTag;
 
 
 #define NPP_SUBCLASS_ID 101
-#define MAX_COLOR_CODE_HIGHTLIGHT 50
+#define MAX_COLOR_CODE_HIGHTLIGHT 80
 
 const wchar_t _ini_section[] = L"nppqcp";
 const wchar_t _ini_key_enable[] = L"enabled";
 const wchar_t _ini_key_highlight[] = L"highlight";
 const wchar_t _ini_file[] = L"nppqcp.ini";
 TCHAR _ini_file_path[MAX_PATH];
+
+struct ColorMarker { CSSColorParser::Color color; int start; int end; };
+ColorMarker _color_markers[MAX_COLOR_CODE_HIGHTLIGHT];
+int _color_marker_index = -1;
 
 // color picker /////////////////////////////////////////////
 ColorPicker* _pColorPicker = NULL;
@@ -44,12 +52,6 @@ bool _is_color_picker_shown = false;
 bool _rgb_selected = false;
 int _rgb_start = -1;
 int _rgb_end = -1;
-
-
-// color code highlight /////////////////////////////////////
-// search list - can't be large than max indicator count
-int _indicator_count = INDIC_CONTAINER;
-COLORREF _indicator_colors[INDIC_MAX+1];
 
 
 ////////////////////////////////////////
@@ -230,7 +232,7 @@ void ToggleColorHighlight() {
 	if (_enable_qcp_highlight) {
 		HighlightColorCode();
 	} else {
-		CleanUnderline();
+		ClearColorMarkers();
 	}
 
 }
@@ -668,20 +670,27 @@ void HighlightColorCode() {
 	int current_target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
 
 	FindHexColor(h_scintilla, start_position, end_position);
-	FindBracketColor(h_scintilla, start_position, end_position);
+
+	char *suff[4] = { "rgb(", "rgba(", "hsl(", "hsla(" };
+	for (int i = 0; i < 4; i++) {
+		FindBracketColor(h_scintilla, start_position, end_position, suff[i]);
+	}
 
 	// restore target range
 	::SendMessage(h_scintilla, SCI_SETTARGETSTART, current_target_start, 0);
 	::SendMessage(h_scintilla, SCI_SETTARGETEND, current_target_end, 0);
 
+	DrawColorMarkers(h_scintilla);
+
 }
+
 
 void FindHexColor(const HWND h_scintilla, const int start_position, const int end_position){
 
-	int match_count = 0;
+	bool marker_not_full = true;
 	int search_start = start_position;
 
-    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
+    while (marker_not_full && search_start < end_position) {
 
 		Sci_TextToFind tf;
 		tf.chrg.cpMin = search_start;
@@ -696,11 +705,12 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
 		}
 
 		// read in the possible color code sequence
-		char hex_color[8];
+		char hex_color[9];
+		hex_color[0] = '#';
 
-		int index = 0;
-		for(; index<6; index++){
-			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos+1 + index, 0);
+		int index = 1;
+		for(; index < 7; index++){
+			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos + index, 0);
 			if( t=='\0' )
 				break;
 			if( strchr("0123456789abcdefABCDEF", t) == NULL )
@@ -713,234 +723,177 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
 		// align the positions
         int target_length = strlen(hex_color);
         int target_start = target_pos;
-        int target_end = target_pos + target_length + 1; // don't forget the '#'
+        int target_end = target_pos + target_length;
 
 		// invalid hex color length
-        if (target_length !=3 && target_length != 6) {
+        if (target_length != 4 && target_length != 7) {
 			search_start = target_end; // move on
             continue;
         }
 
-		// pad 3 char hex string
-        if (target_length == 3) {
-			hex_color[6] = '\0';
-            hex_color[5] = hex_color[2];
-            hex_color[4] = hex_color[2];
-            hex_color[3] = hex_color[1];
-            hex_color[2] = hex_color[1];
-            hex_color[1] = hex_color[0];
-            hex_color[0] = hex_color[0];
-        }
+		// parse color string
+		CSSColorParser::Color css_color = CSSColorParser::parse(hex_color);
 
-        // parse hex color string to COLORREF
-		COLORREF color = strtol(hex_color, NULL, 16);
-		color = RGB(GetBValue(color),GetGValue(color),GetRValue(color));
-
-		DrawUnderline(h_scintilla, color, target_start, target_end);
+		marker_not_full = SaveColorMarker(css_color, target_start, target_end);
 
 		search_start = target_end; // move on
-        match_count++;
 
     }
 
 }
 
 
-void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position) {
+void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position, char* suff) {
 
-	int match_count = 0;
+	int suff_len = strlen(suff) - 1;
+
+	bool marker_not_full = true;
 	int search_start = start_position;
 	int search_end = end_position + 1;
 
-	char suff[] = "rgba(";
-	int suff_len = strlen(suff) - 1;
-
-	while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
-
-		int target_start = 0;
-		int target_end = 0;
+	while (marker_not_full && search_start < end_position) {
 
 		Sci_TextToFind tf;
 		tf.chrg.cpMin = search_start;
 		tf.chrg.cpMax = search_end;
 		tf.lpstrText = suff;
 
-		int start_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
+		int target_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
 
 		// not found
-		if (start_pos == -1) {
+		if (target_pos == -1) {
 			break;
 		}
 
-		target_start = start_pos;
+		// read in the possible color code sequence
+		const int MAX_LEN = 30;
+		char bracket_color[MAX_LEN];
+		strcpy(bracket_color, suff);
 
-		start_pos = start_pos + suff_len + 1;
+		bool is_closed = false;
+		bool has_invalid_token = false;
+		int index = suff_len + 1;
+		int max_index = MAX_LEN - index - 1;
+		for (; index < max_index; index++) {
 
-		search_start = start_pos; // move forward
+			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos + index, 0);
 
-		tf.chrg.cpMin = search_start;
-		tf.chrg.cpMax = search_end;
-		tf.lpstrText = ")";
-
-		int end_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
-
-		// no close bracket found - stop searching
-		if (end_pos == -1) {
-			break;
-		}
-
-		target_end = end_pos + 1;
-
-		search_start = target_end; // move forward
-
-		// too short or too long - continue
-		int len = end_pos - start_pos;
-		if ( len < 5 || len > 25) {
-			continue;
-		}
-
-		// read in segments and parse
-		char buffer[4][10];
-		bool parse_ok = true;
-		int seg_index = 0;
-		int char_index = 0;
-
-		for (int i = start_pos; i < end_pos; i++) {
-
-			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, i, 0);
-
-			// end of text or segment too long
-			if (t == '\0' || char_index > 9) {
+			if (t == ')') {
+				bracket_color[index] = t;
+				index++;
+				is_closed = true;
 				break;
 			}
 
-			// end of segment, put and continue
-			if (t == ',' || t == ')') {
-				buffer[seg_index][char_index] = '\0';
-				seg_index++;
-				char_index = 0;
-				continue;
-			}
-
-			buffer[seg_index][char_index] = t;
-
-			char_index++;
-
-		}
-
-		// convert string to numbers
-		bool is_ok = true;
-		int nums[4];
-		for (int i = 0; i < 3; i++) {
-
-			nums[i] = strtol(buffer[i], nullptr, 10);
-
-			if (nums[i] > 255) {
-				is_ok = false;
+			if (t == '\0' || strchr("0123456789abcdefABCDEF ,.%", t) == NULL) {
+				has_invalid_token = true;
 				break;
 			}
 
+			bracket_color[index] = t;
+
 		}
 
-		if (!is_ok)
+		bracket_color[index] = '\0';
+
+		// align the positions
+		int target_length = strlen(bracket_color);
+		int target_start = target_pos;
+		int target_end = target_pos + target_length;
+
+		// no close bracket / too short / too long  - continue
+		if (has_invalid_token || !is_closed || target_length < 10 || target_length > MAX_LEN) {
+			search_start = target_start + suff_len; // move on
 			continue;
+		}
 
-		// parse hex color string to COLORREF
-		COLORREF color = RGB(nums[0], nums[1], nums[2]);
+		// parse color string
+		CSSColorParser::Color css_color = CSSColorParser::parse(bracket_color);
 
-		DrawUnderline(h_scintilla, color, target_start, target_end);
+		marker_not_full = SaveColorMarker(css_color, target_start, target_end);
+
+		search_start = target_end; // move on
 
 	}
 
 }
 
 
+bool SaveColorMarker(CSSColorParser::Color color, int marker_start, int marker_end) {
 
+	_color_marker_index++;
 
-void  FindRgbColor(const HWND h_scintilla, const int start_position, const int end_position){
+	if (_color_marker_index < MAX_COLOR_CODE_HIGHTLIGHT) {
 
-	int match_count = 0;
-	int search_start = start_position;
+		_color_markers[_color_marker_index] = { color, marker_start, marker_end };
 
-    while (match_count < MAX_COLOR_CODE_HIGHTLIGHT && search_start < end_position) {
+		return true;
 
-		char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*)(?:\\)]|,[0-9. ]+\\))";
+	}
+	else {
 
-		::SendMessage(h_scintilla, SCI_SETTARGETSTART, search_start, 0);
-		::SendMessage(h_scintilla, SCI_SETTARGETEND, end_position, 0);
-		::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
-        ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
-		int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
-
-		// not found
-		if(target_pos == -1) {
-			break;
-		}
-
-		char r[6], g[6], b[6];
-		::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&r);
-		::SendMessage(h_scintilla, SCI_GETTAG, 2, (LPARAM)&g);
-		::SendMessage(h_scintilla, SCI_GETTAG, 3, (LPARAM)&b);
-
-		int ir = strtol(r, NULL, 10);
-		int ig = strtol(g, NULL, 10);
-		int ib = strtol(b, NULL, 10);
-
-        int target_start = target_pos;
-        int target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
-        int target_length = target_end - target_start;
-
-		// invalid color value
-		if(ir>255 || ig>255 || ib>255){
-			search_start = target_end; // move on
-			continue;
-		}
-
-        // parse hex color string to COLORREF
-		COLORREF color = RGB(ir, ig, ib);
-
-		DrawUnderline(h_scintilla, color, target_start, target_end);
-
-		search_start = target_end; // move on
-        match_count++;
-
-    }
+		return false;
+	}
 
 }
 
+void EmptyColorMarker() {
 
-void DrawUnderline(const HWND h_scintilla, const COLORREF color, const int start, int end) {
+	_color_marker_index = -1;
+
+}
+
+void DrawColorMarkers(const HWND h_scintilla) {
 	
-	int length = end - start;
+	if (_color_marker_index < 0)
+		return;
 
-	int start_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, start);
-	int start_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, start);
-	int end_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, end);
-	int end_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, end);
-
-	int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT, 0, 0);
-
-	// paint swatch /////////
 	HDC hdc_editor = ::GetDC(h_scintilla);
 	RECT rc;
 	HBRUSH brush;
 
-	// new color
-	rc.left = start_x;
-	rc.right = end_x;
-	rc.top = start_y + line_height;
-	rc.bottom = rc.top + 2;
-	brush = ::CreateSolidBrush(color);
-	::FillRect(hdc_editor, &rc, brush);
-	::DeleteObject(brush);
+	int list_length = _color_marker_index + 1;
+
+	for (int i = 0; i < list_length; i++) {
+
+		ColorMarker cm = _color_markers[i];
+
+		int length = cm.end - cm.start;
+
+		int start_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, cm.start);
+		int start_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, cm.start);
+		int end_x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, cm.end);
+		int end_y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, cm.end);
+
+		int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT, 0, 0);
+
+		// convert to COLORREF
+		COLORREF colorref = RGB(cm.color.r, cm.color.g, cm.color.b);
+
+		// paint swatch /////////
+
+		// new color
+		rc.left = start_x;
+		rc.right = end_x;
+		rc.top = start_y + line_height;
+		rc.bottom = rc.top + 2;
+		brush = ::CreateSolidBrush(colorref);
+		::FillRect(hdc_editor, &rc, brush);
+		::DeleteObject(brush);
 	
+	}
+
 	::ReleaseDC(h_scintilla, hdc_editor);
+
+	EmptyColorMarker();
 
 }
 
 
-void CleanUnderline() {
-	
+void ClearColorMarkers() {
+
+	EmptyColorMarker();
+
 	HWND h_scintilla = GetScintilla();
 	::RedrawWindow(h_scintilla, NULL, NULL, RDW_INVALIDATE);
 

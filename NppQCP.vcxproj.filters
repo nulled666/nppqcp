@@ -27,6 +27,9 @@
     <ClCompile Include="ColorPicker\ScreenPicker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="csscolorparser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="shared\Scintilla.h">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="csscolorparser.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

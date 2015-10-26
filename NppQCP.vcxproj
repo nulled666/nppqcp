@@ -194,6 +194,7 @@
   <ItemGroup>
     <ClCompile Include="ColorPicker\ColorPicker.cpp" />
     <ClCompile Include="ColorPicker\ScreenPicker.cpp" />
+    <ClCompile Include="csscolorparser.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="NppQCP.cpp" />
   </ItemGroup>
@@ -201,6 +202,7 @@
     <ClInclude Include="ColorPicker\ColorPicker.h" />
     <ClInclude Include="ColorPicker\ColorPicker.res.h" />
     <ClInclude Include="ColorPicker\ScreenPicker.h" />
+    <ClInclude Include="csscolorparser.hpp" />
     <ClInclude Include="NppQCP.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="shared\PluginInterface.h" />

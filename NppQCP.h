@@ -4,6 +4,7 @@
 
 
 #include "PluginInterface.h"
+#include "csscolorparser.hpp"
 
 const TCHAR NPP_PLUGIN_NAME[] = TEXT("Quick Color Picker +");
 const TCHAR NPP_PLUGIN_VER[] = TEXT("1.0");
@@ -55,10 +56,13 @@ void SaveRecentColor();
 
 void HighlightColorCode();
 
-void FindHexColor(const HWND h_scintilla, const int start_position, const int end_position);
-void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position);
+void EmptyColorMarker();
+bool SaveColorMarker(CSSColorParser::Color color, int marker_start, int marker_end);
 
-void DrawUnderline(const HWND h_scintilla, const COLORREF color, const int start, const int end);
-void CleanUnderline();
+void FindHexColor(const HWND h_scintilla, const int start_position, const int end_position);
+void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position, char* suff);
+
+void DrawColorMarkers(const HWND h_scintilla);
+void ClearColorMarkers();
 
 #endif //PLUGINDEFINITION_H
