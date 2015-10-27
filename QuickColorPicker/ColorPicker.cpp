@@ -98,6 +98,16 @@ void ColorPicker::SetColor(RGBAColor color) {
 
 }
 
+void ColorPicker::SetHSLAColor(HSLAColor color) {
+	RGBAColor rgb = hsl2rgb(color);
+	SetColor(rgb);
+}
+
+HSLAColor ColorPicker::GetHSLAColor() {
+	HSLAColor hsl = rgb2hsl(_old_color);
+	return hsl;
+}
+
 bool ColorPicker::SetHexColor(const char* hex_str) {
 
 	RGBAColor color;
@@ -719,6 +729,7 @@ void ColorPicker::PaletteMouseMove(const POINT p){
 void ColorPicker::PaletteMouseClick(const POINT p, bool is_right_button){
 
 	if(!is_right_button){
+		_new_color.a = _old_color.a; // save the alpha value
 		_old_color = _new_color;
 		SaveToRecentColor(_old_color);
 		::SendMessage(_message_window, WM_QCP_PICK, RGB(_old_color.r, _old_color.g, _old_color.b), 0);

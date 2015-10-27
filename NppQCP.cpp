@@ -30,6 +30,12 @@ bool doCloseTag;
 #define NPP_SUBCLASS_ID 101
 #define MAX_COLOR_CODE_HIGHTLIGHT 80
 
+#define TYPE_RGB 1
+#define TYPE_RGBA 2
+#define TYPE_HSL 3
+#define TYPE_HSLA 4
+#define TYPE_HEX 5
+
 const wchar_t _ini_section[] = L"nppqcp";
 const wchar_t _ini_key_enable[] = L"enabled";
 const wchar_t _ini_key_highlight[] = L"highlight";
@@ -49,9 +55,9 @@ bool _enable_qcp = false;
 bool _enable_qcp_highlight = false;
 bool _is_color_picker_shown = false;
 
-bool _rgb_selected = false;
-int _rgb_start = -1;
-int _rgb_end = -1;
+int _current_type = 0;
+int _replace_start = -1;
+int _replace_end = -1;
 
 
 ////////////////////////////////////////
@@ -386,7 +392,7 @@ bool ShowColorPicker(){
 
 	HWND h_scintilla = GetScintilla();
 
-	// detect hex color code
+	// check for selection
 	int selection_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
 	int selection_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
 
@@ -394,12 +400,16 @@ bool ShowColorPicker(){
 	if(selection_start==selection_end)
 		return false;
 
-	_rgb_selected = false;
-	bool result = CheckSelectionForHexColor(h_scintilla, selection_start, selection_end);
+	// create the color picker if not created
+	if (!_pColorPicker)
+		CreateColorPicker();
 
-	if(!result){
+	// check for color codes
+	_current_type = 0;
+
+	bool result = CheckSelectionForHexColor(h_scintilla, selection_start, selection_end);
+	if (!result) {
 		result = CheckSelectionForRgbColor(h_scintilla, selection_start, selection_end);
-		_rgb_selected = result;
 	}
 
 	if(!result)
@@ -449,10 +459,12 @@ bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const in
 		return false;
 
 	// passed -
+	_current_type = TYPE_HEX;
 
-	// create the color picker if not created
-	if (!_pColorPicker)
-		CreateColorPicker();
+
+	// save selection range
+	_replace_start = start;
+	_replace_end = end;
 
 	// get hex text - scintilla only accept char
 	char hex_str[10];
@@ -482,59 +494,63 @@ bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const in
 	if (next_char != '(')
 		return false;
 
+	// check for suffix
+	char suff[5];
+	::SendMessage(h_scintilla, SCI_GETSELTEXT, 0, (LPARAM)&suff);
+
+	if (strcmp(suff,"rgb") == 0) {
+		_current_type = TYPE_RGB;
+	}
+	else if (strcmp(suff,"rgba") == 0) {
+		_current_type = TYPE_RGBA;
+	}
+	else if (strcmp(suff, "hsl") == 0) {
+		_current_type = TYPE_HSL;
+	}
+	else if (strcmp(suff, "hsla") == 0) {
+		_current_type = TYPE_HSLA;
+	}
+	else {
+		return false;
+	}
+
+	// get first close bracket position
 	int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, end, 0);
 	int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, line, 0);
 
-	// get first close bracket position
-	char close_bracket[] = ")";
-	::SendMessage(h_scintilla, SCI_SETTARGETSTART, end, 0);
-	::SendMessage(h_scintilla, SCI_SETTARGETEND, line_end, 0);
-	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, 0, 0);
-    ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
-	int close_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(close_bracket), (LPARAM)close_bracket);
+	Sci_TextToFind tf;
+	tf.chrg.cpMin = end;
+	tf.chrg.cpMax = line_end + 1;
+	tf.lpstrText = ")";
 
-	// no close bracket
-	if(close_pos == -1)
+	int close_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
+	if (close_pos == -1) {
 		return false;
+	}
 
-	// only match the first 3 values
-	char regexp[] = "(?i:rgb\\(|rgba\\()([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*,[ ]*)([0-9]{1,3})(?:[ ]*)";
-	::SendMessage(h_scintilla, SCI_SETTARGETSTART, start, 0);
-	::SendMessage(h_scintilla, SCI_SETTARGETEND, close_pos+1, 0);
-	::SendMessage(h_scintilla, SCI_SETSEARCHFLAGS, SCFIND_REGEXP, 0);
-    ::SendMessage(h_scintilla, SCI_SEARCHANCHOR, 0, 0);
-	int target_pos = ::SendMessage(h_scintilla, SCI_SEARCHINTARGET, strlen(regexp), (LPARAM)regexp);
+	int full_len = close_pos - start;
+	if (full_len < 5 || full_len>30)
+		return false;	// not too long
 
-	// no match
-	if(target_pos == -1)
-		return false;
 
-	char r[6], g[6], b[6];
-	::SendMessage(h_scintilla, SCI_GETTAG, 1, (LPARAM)&r);
-	::SendMessage(h_scintilla, SCI_GETTAG, 2, (LPARAM)&g);
-	::SendMessage(h_scintilla, SCI_GETTAG, 3, (LPARAM)&b);
+	// read in the whole string and parse
+	char buff[35];
+	Sci_TextRange tr;
+	tr.chrg.cpMin = start;
+	tr.chrg.cpMax = close_pos + 1;
+	tr.lpstrText = buff;
 
-	int ir = strtol(r, NULL, 10);
-	int ig = strtol(g, NULL, 10);
-	int ib = strtol(b, NULL, 10);
+	::SendMessage(h_scintilla, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
 
-	// invalid color value
-	if(ir>255 || ig>255 || ib>255)
-		return false;
-
-	// passed -
-	COLORREF color = RGB(ir, ig, ib);
+	CSSColorParser::Color color = CSSColorParser::parse(buff);
+	QuickColorPicker::RGBAColor rgb = QuickColorPicker::RGBAColor(color.r, color.g, color.b, color.a);
 
 	// prepare seletion range for replacement
-	_rgb_start = end + 1;
-	_rgb_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
-
-	// create the color picker if not created
-	if (!_pColorPicker)
-		CreateColorPicker();
+	_replace_start = end + 1;
+	_replace_end = close_pos;
 
 	// put current color to picker
-	_pColorPicker->SetColor(color);
+	_pColorPicker->SetColor(rgb);
 
 	return true;
 
@@ -570,18 +586,45 @@ bool HasSelection(){
 
 void WriteColor(COLORREF color) {
 
-
 	HWND h_scintilla = GetScintilla();
 
 	char buff[100];
 
-	if(_rgb_selected){
-		sprintf(buff, "%d,%d,%d", GetRValue(color), GetGValue(color), GetBValue(color));
-		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _rgb_start, 0);
-		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _rgb_end, 0);
-	}else{
-		// get hex string
+	if(_current_type == TYPE_HEX){
+
+		// hex string
+
 		_pColorPicker->GetHexColor(buff, sizeof(buff));
+
+	}else{
+		// bracket color
+
+		// set replace range
+		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _replace_start, 0);
+		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _replace_end, 0);
+
+		if (_current_type == TYPE_RGB || _current_type == TYPE_RGBA) {
+			QuickColorPicker::RGBAColor rgb = _pColorPicker->GetColor();
+			if (_current_type == TYPE_RGB) {
+				sprintf(buff, "%d,%d,%d", rgb.r, rgb.g, rgb.b);
+			}
+			else {
+				sprintf(buff, "%d,%d,%d,%.2g", rgb.r, rgb.g, rgb.b, rgb.a);
+			}
+		}
+		else if (_current_type == TYPE_HSL || _current_type == TYPE_HSLA) {
+			QuickColorPicker::HSLAColor hsl = _pColorPicker->GetHSLAColor();
+			int h = (int)hsl.h;
+			int s = round(hsl.s * 100);
+			int l = round(hsl.l * 100);
+			if (_current_type == TYPE_HSL) {
+				sprintf(buff, "%d,%d%%,%d%%", h, s, l);
+			}
+			else {
+				sprintf(buff, "%d,%d%%,%d%%,%.2g", h, s, l, hsl.a);
+			}
+		}
+
 	}
 		
 	::SendMessage(h_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);

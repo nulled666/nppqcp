@@ -117,10 +117,13 @@ namespace QuickColorPicker {
 
 
 		// Other stuffs here
-		void SetColor(RGBAColor color);
+		void SetColor(const RGBAColor color);
 		RGBAColor GetColor() {
 			return _old_color;
 		}
+
+		void SetHSLAColor(HSLAColor color);
+		HSLAColor GetHSLAColor();
 
 		bool SetHexColor(const char* hex_color);
 		bool GetHexColor(char* out_hex, int buffer_size);
