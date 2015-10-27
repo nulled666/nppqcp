@@ -7,7 +7,7 @@
 
 #define MASK_WIN_CLASS L"nplus_screen_picker"
 #define INFO_WINDOW_WIDTH 224
-#define INFO_WINDOW_HEIGHT 138
+#define INFO_WINDOW_HEIGHT 140
 #define CONTROL_BORDER_COLOR 0x666666
 #define IDK_HIDE 101
 
