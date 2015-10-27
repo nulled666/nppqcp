@@ -6,10 +6,12 @@ USAGE:
 
 		#include "QuickColorPicker\ColorPicker.h"
 		#include "QuickColorPicker\ColorPicker.res.h"
+		
+		using namespace QuickColorPicker;
 
 		ColorPicker* pColorPicker = new ColorPicker();
 		pColorPicker->Create(hInstance, hwndParent);
-		pColorPicker->SetColor(RGB(255,0,128));
+		pColorPicker->SetColor(RGBAColor(255,0,128,1));
 		pColorPicker->SetParentRect(rc);
 		pColorPicker->Show();
 
@@ -165,7 +167,7 @@ namespace QuickColorPicker {
 
 		RECT _rect_adjust_buttons;
 
-		RGBAColor _adjust_color_data[3][ADJUST_ZONE_ROW];
+		RGBAColor _adjust_color_data[4][ADJUST_ZONE_ROW];
 		RGBAColor _adjust_color;
 		double _adjust_preserved_hue;
 		double _adjust_preserved_saturation;

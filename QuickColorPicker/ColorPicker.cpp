@@ -771,11 +771,13 @@ void ColorPicker::GenerateAdjustColors(const RGBAColor color){
 			_adjust_color_data[0][i] = color;
 			_adjust_color_data[1][i] = color;
 			_adjust_color_data[2][i] = color;
+			_adjust_color_data[3][i] = color;
 			continue;
 		}
 		_adjust_color_data[0][i] = hsl2rgb(hsl.h + q[i], hsl.s, hsl.l, hsl.a);
 		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/100, hsl.l, hsl.a);
 		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i]/100, hsl.a);
+		_adjust_color_data[3][i] = hsl2rgb(hsl.h, hsl.s, hsl.l, hsl.a + q[i] / 100);
 	}
 
 }
@@ -810,6 +812,7 @@ void ColorPicker::PaintAdjustZone(){
 	RGBAColor color;
 
 	for(int i=0; i<ADJUST_ZONE_ROW; i++){
+
 		rc.top = ADJUST_ZONE_Y + ADJUST_ZONE_CELL_HEIGHT*i;
 		rc.bottom = rc.top + ADJUST_ZONE_CELL_HEIGHT;
 		rc.left = ADJUST_ZONE_X;
@@ -818,16 +821,25 @@ void ColorPicker::PaintAdjustZone(){
 		hbrush = ::CreateSolidBrush((COLORREF)color);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
+
 		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
 		hbrush = ::CreateSolidBrush(_adjust_color_data[1][i]);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
+
 		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
 		hbrush = ::CreateSolidBrush(_adjust_color_data[2][i]);
 		::FillRect(hdc, &rc, hbrush);
 		::DeleteObject(hbrush);
+
+		rc.left = rc.right+1;
+		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
+		hbrush = ::CreateSolidBrush(_adjust_color_data[3][i]);
+		::FillRect(hdc, &rc, hbrush);
+		::DeleteObject(hbrush);
+
 	}
 
 	rc.left = ADJUST_ZONE_X;
