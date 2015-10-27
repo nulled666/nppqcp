@@ -6,8 +6,8 @@
 #include "ColorPicker.res.h"
 
 #define MASK_WIN_CLASS L"nplus_screen_picker"
-#define INFO_WINDOW_WIDTH 180
-#define INFO_WINDOW_HEIGHT 100
+#define INFO_WINDOW_WIDTH 224
+#define INFO_WINDOW_HEIGHT 138
 #define CONTROL_BORDER_COLOR 0x666666
 #define IDK_HIDE 101
 
@@ -201,51 +201,51 @@ void ScreenPicker::SampleColor(int x, int y){
 	
 	// zoomed preview
 	HDC hdc_desktop = ::GetDC(HWND_DESKTOP);
-	::StretchBlt(hdc_win, 5, 5, 87, 87, hdc_desktop, x-4, y-4, 9, 9, SRCCOPY);
+	::StretchBlt(hdc_win, 5, 5, 127, 127, hdc_desktop, x-4, y-4, 9, 9, SRCCOPY);
 	::ReleaseDC(HWND_DESKTOP, hdc_desktop);
 
 	// frame box
 	rc.left = 5;
 	rc.top = 5;
-	rc.right = 93;
-	rc.bottom = 93;
+	rc.right = 132;
+	rc.bottom = 132;
 	brush = ::CreateSolidBrush(0);
 	::FrameRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
 	// center box
-	rc.left = 43;
-	rc.top = 43;
-	rc.right = 54;
-	rc.bottom = 54;
+	rc.left = 63;
+	rc.top = 63;
+	rc.right = 74;
+	rc.bottom = 74;
 	brush = ::CreateSolidBrush(_new_color ^ 0xffffff);
 	::FrameRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
 	// paint color swatch /////////////////
 	// bg
-	rc.left = 99;
+	rc.left = 139;
 	rc.top = 6;
-	rc.right = 172;
-	rc.bottom = 32;
+	rc.right = 217;
+	rc.bottom = 39;
 	brush = ::CreateSolidBrush(CONTROL_BORDER_COLOR);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
 	// new color
-	rc.left = 100;
+	rc.left = 140;
 	rc.top = 7;
-	rc.right = 136;
-	rc.bottom = 31;
+	rc.right = 178;
+	rc.bottom = 38;
 	brush = ::CreateSolidBrush(_new_color);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
 
 	// old color
-	rc.left = 136;
+	rc.left = 178;
 	rc.top = 7;
-	rc.right = 171;
-	rc.bottom = 31;
+	rc.right = 216;
+	rc.bottom = 38;
 	brush = ::CreateSolidBrush(_old_color);
 	::FillRect(hdc_win, &rc, brush);
 	::DeleteObject(brush);
@@ -323,10 +323,10 @@ void ScreenPicker::PrepareInfoWindow(){
 	HWND ctrl;
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_RGB);
-	::MoveWindow(ctrl, 100, INFO_WINDOW_HEIGHT-38, 80, 16, false);
+	::MoveWindow(ctrl, 140, INFO_WINDOW_HEIGHT-38, 80, 16, false);
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_HEX);
-	::MoveWindow(ctrl, 100, INFO_WINDOW_HEIGHT-22, 80, 16, false);
+	::MoveWindow(ctrl, 140, INFO_WINDOW_HEIGHT-22, 80, 16, false);
 
 }
 
