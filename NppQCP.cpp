@@ -614,7 +614,7 @@ void WriteColor(COLORREF color) {
 		}
 		else if (_current_type == TYPE_HSL || _current_type == TYPE_HSLA) {
 			QuickColorPicker::HSLAColor hsl = _pColorPicker->GetHSLAColor();
-			int h = (int)hsl.h;
+			int h = round(hsl.h);
 			int s = round(hsl.s * 100);
 			int l = round(hsl.l * 100);
 			if (_current_type == TYPE_HSL) {

@@ -191,8 +191,11 @@ namespace QuickColorPicker {
 		bool PointInRect(const POINT p, const RECT rc);
 		void PaintAll();
 
+		void DrawColorBlock(const HDC hdc, const RECT rc, const RGBAColor color, bool ignore_alpha = false);
+		COLORREF mixcolor(RGBAColor fgcolor, RGBAColor bkcolor);
+
 		// color preview
-		void PaintColorSwatch();
+		void PaintColorCompareSwatch();
 		void DisplayNewColor(RGBAColor color);
 
 		// palette
@@ -208,6 +211,7 @@ namespace QuickColorPicker {
 
 		void GenerateAdjustColors(RGBAColor color);
 		void PaintAdjustZone();
+		void DrawAdjustZoneCenterRow(HDC hdc);
 		void DrawAdjustZoneHoverBox(int row, int index, bool is_hover = true);
 		void AdjustZoneMouseMove(const POINT p);
 		void AdjustZoneMouseClick(const POINT p, bool is_right_button);

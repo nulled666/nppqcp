@@ -447,36 +447,61 @@ bool ColorPicker::PointInRect(const POINT p, const RECT rc) {
 
 void ColorPicker::PaintAll(){
 	PaintColorPalette();
-	PaintColorSwatch();
+	PaintColorCompareSwatch();
 	PaintAdjustZone();
+}
+
+// helper function
+void ColorPicker::DrawColorBlock(const HDC hdc, const RECT rc, const RGBAColor color, bool ignore_alpha)
+{
+	HBRUSH hbrush;
+	RGBAColor rgb = color;
+
+	if (color.a == 1 || ignore_alpha) {
+		hbrush = ::CreateSolidBrush((COLORREF)rgb);
+	}
+	else {
+		COLORREF fgcolor = mixcolor(rgb, RGBAColor(223, 223, 223, 1));
+		COLORREF bkcolor = mixcolor(rgb, RGBAColor(255, 255, 255, 1));
+		hbrush = ::CreateHatchBrush(HS_DIAGCROSS, fgcolor);
+		::SetBkColor(hdc, bkcolor);
+	}
+
+	::FillRect(hdc, &rc, hbrush);
+	::DeleteObject(hbrush);
+
+}
+
+COLORREF ColorPicker::mixcolor(RGBAColor fgcolor, RGBAColor bkcolor) {
+	double r, g, b;
+	r = (fgcolor.r * fgcolor.a) + (bkcolor.r * (1.0 - fgcolor.a));
+	g = (fgcolor.g * fgcolor.a) + (bkcolor.g * (1.0 - fgcolor.a));
+	b = (fgcolor.b * fgcolor.a) + (bkcolor.b * (1.0 - fgcolor.a));
+	return RGB(r, g, b);
 }
 
 ///////////////////////////////////////////////////////////////////
 // COLOR SWATCHES
 ///////////////////////////////////////////////////////////////////
 
-void ColorPicker::PaintColorSwatch() {
+void ColorPicker::PaintColorCompareSwatch() {
 	
 	// paint swatch /////////
 	HDC hdc_win = ::GetDC(_color_popup);
 	RECT rc;
 	HBRUSH brush;
-	
+
 	// new color
 	rc.top = SWATCH_Y;
 	rc.bottom = rc.top+SWATCH_HEIGHT;
 	rc.left = SWATCH_X;
 	rc.right = rc.left + SWATCH_WIDTH;
-	brush = ::CreateSolidBrush(RGB(_new_color.r, _new_color.g, _new_color.b));
-	::FillRect(hdc_win, &rc, brush);
-	::DeleteObject(brush);
+	DrawColorBlock(hdc_win, rc, _new_color);
 
 	// old color
 	rc.left = rc.right;
 	rc.left = rc.left + SWATCH_WIDTH;
-	brush = ::CreateSolidBrush(RGB(_old_color.r, _old_color.g, _old_color.b));
-	::FillRect(hdc_win, &rc, brush);
-	::DeleteObject(brush);
+	DrawColorBlock(hdc_win, rc, _old_color);
 	
 	// frame
 	rc.left = SWATCH_X;
@@ -510,7 +535,7 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 	wsprintf(output, L"#%hs / HSL(%d,%d%%,%d%%)", hex, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
-	PaintColorSwatch();
+	PaintColorCompareSwatch();
 
 }
 
@@ -640,9 +665,7 @@ void ColorPicker::PaintColorPalette(){
 		for (int index = 0; index < PALETTE_COLUMN; index++) {
 
 			color = _color_palette_data[row][index];
-			hbrush = ::CreateSolidBrush(RGB(color.r, color.g, color.b));
-			::FillRect(hdc, &rc, hbrush);
-			::DeleteObject(hbrush);
+			DrawColorBlock(hdc, rc, color);
 
 			if (!_old_color_found_in_palette && color == _old_color) {
 				_old_color_index = index;
@@ -674,19 +697,23 @@ void ColorPicker::DrawColorHoverBox(int row, int index, bool is_hover) {
 	RGBAColor color;
 
 	color = _color_palette_data[row][index];
-	if (is_hover) {
-		color.r = color.r ^ 0xff;
-		color.g = color.g ^ 0xff;
-		color.b = color.b ^ 0xff;
-	}
 
 	rc.left = _rect_palette.left + index*PALETTE_CELL_SIZE;
 	rc.right = rc.left + PALETTE_CELL_SIZE;
 	rc.top = _rect_palette.top + row*PALETTE_CELL_SIZE;
 	rc.bottom = rc.top + PALETTE_CELL_SIZE;
-	hbrush = ::CreateSolidBrush((COLORREF)color);
-	::FrameRect(hdc, &rc, hbrush);
-	::DeleteBrush(hbrush);
+
+	if (is_hover) {
+		color.r = color.r ^ 0xff;
+		color.g = color.g ^ 0xff;
+		color.b = color.b ^ 0xff;
+		hbrush = ::CreateSolidBrush((COLORREF)color);
+		::FrameRect(hdc, &rc, hbrush);
+		::DeleteBrush(hbrush);
+	}
+	else {
+		DrawColorBlock(hdc, rc, color);
+	}
 
 	::ReleaseDC(_color_popup, hdc);
 
@@ -817,47 +844,47 @@ void ColorPicker::PaintAdjustZone(){
 		rc.bottom = rc.top + ADJUST_ZONE_CELL_HEIGHT;
 		rc.left = ADJUST_ZONE_X;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
-		color = _adjust_color_data[0][i];
-		hbrush = ::CreateSolidBrush((COLORREF)color);
-		::FillRect(hdc, &rc, hbrush);
-		::DeleteObject(hbrush);
+		DrawColorBlock(hdc, rc, _adjust_color_data[0][i], true);
 
 		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
-		hbrush = ::CreateSolidBrush(_adjust_color_data[1][i]);
-		::FillRect(hdc, &rc, hbrush);
-		::DeleteObject(hbrush);
+		DrawColorBlock(hdc, rc, _adjust_color_data[1][i], true);
 
 		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
-		hbrush = ::CreateSolidBrush(_adjust_color_data[2][i]);
-		::FillRect(hdc, &rc, hbrush);
-		::DeleteObject(hbrush);
+		DrawColorBlock(hdc, rc, _adjust_color_data[2][i], true);
 
 		rc.left = rc.right+1;
 		rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
-		hbrush = ::CreateSolidBrush(_adjust_color_data[3][i]);
-		::FillRect(hdc, &rc, hbrush);
+		DrawColorBlock(hdc, rc, _adjust_color_data[3][i]);
 		::DeleteObject(hbrush);
 
 	}
 
-	rc.left = ADJUST_ZONE_X;
-	rc.right = rc.left + ADJUST_ZONE_WIDTH;
-	rc.top = ADJUST_ZONE_Y + ADJUST_ZONE_CELL_HEIGHT*_adjust_center_row;
-	rc.bottom = rc.top + ADJUST_ZONE_CELL_HEIGHT;
-
-	hbrush = ::CreateSolidBrush(_adjust_color);
-	::FillRect(hdc, &rc, hbrush);
-	::DeleteObject(hbrush);
-
-	::InflateRect(&rc, 1, 0);
-	hbrush = ::CreateSolidBrush(CONTROL_BORDER_COLOR);
-	::FrameRect(hdc, &rc, hbrush);
-	::DeleteObject(hbrush);
+	// center row
+	DrawAdjustZoneCenterRow(hdc);
 
 	::ReleaseDC(_color_popup, hdc);
 
+}
+
+void ColorPicker::DrawAdjustZoneCenterRow(HDC hdc) {
+	RECT rc;
+	rc.left = ADJUST_ZONE_X;
+	rc.right = rc.left + ADJUST_ZONE_WIDTH - ADJUST_ZONE_CELL_WIDTH;
+	rc.top = ADJUST_ZONE_Y + ADJUST_ZONE_CELL_HEIGHT*_adjust_center_row;
+	rc.bottom = rc.top + ADJUST_ZONE_CELL_HEIGHT;
+	DrawColorBlock(hdc, rc, _adjust_color, true);
+
+	rc.left = rc.right;
+	rc.right = rc.right + ADJUST_ZONE_CELL_WIDTH;
+	DrawColorBlock(hdc, rc, _adjust_color);
+
+	rc.left = ADJUST_ZONE_X;
+	::InflateRect(&rc, 1, 0);
+	HBRUSH hbrush = ::CreateSolidBrush(CONTROL_BORDER_COLOR);
+	::FrameRect(hdc, &rc, hbrush);
+	::DeleteObject(hbrush);
 }
 
 void ColorPicker::DrawAdjustZoneHoverBox(int row, int index, bool is_hover){
@@ -865,33 +892,44 @@ void ColorPicker::DrawAdjustZoneHoverBox(int row, int index, bool is_hover){
 	HDC hdc = ::GetDC(_color_popup);
 	HBRUSH hbrush;
 	RECT rc;
-	COLORREF color;
+	RGBAColor color;
 
 	color = _adjust_color_data[index][row];
-	if (is_hover)
-		color = color ^ 0xffffff;
 
 	rc.left = _rect_adjust_buttons.left + index*(ADJUST_ZONE_CELL_WIDTH+1);
 	rc.right = rc.left + ADJUST_ZONE_CELL_WIDTH;
 	rc.top = _rect_adjust_buttons.top + row*ADJUST_ZONE_CELL_HEIGHT;
 	rc.bottom = rc.top + ADJUST_ZONE_CELL_HEIGHT;
 
-	if(row == _adjust_center_row){
-		rc.left = _rect_adjust_buttons.left;
-		rc.right = _rect_adjust_buttons.right;
-		::InflateRect(&rc, 0, -1);
-	}
 
-	hbrush = ::CreateSolidBrush(color);
-	::FrameRect(hdc, &rc, hbrush);
-	::DeleteBrush(hbrush);
+	if (is_hover) {
+		if(row == _adjust_center_row){
+			rc.left = _rect_adjust_buttons.left;
+			rc.right = _rect_adjust_buttons.right;
+			::InflateRect(&rc, 0, -1);
+		}
+		color.r = color.r ^ 0xff;
+		color.g = color.g ^ 0xff;
+		color.b = color.b ^ 0xff;
+		hbrush = ::CreateSolidBrush(color);
+		::FrameRect(hdc, &rc, hbrush);
+		::DeleteBrush(hbrush);
+	}
+	else {
+		if (row == _adjust_center_row) {
+			DrawAdjustZoneCenterRow(hdc);
+		}
+		else {
+			bool solid = (index == 3) ? false : true;
+			DrawColorBlock(hdc, rc, color, solid);
+		}
+	}
 
 	::ReleaseDC(_color_popup, hdc);
 
 }
 
 void ColorPicker::AdjustZoneMouseMove(const POINT p){
-
 
 	int index = round((p.x-_rect_adjust_buttons.left)/(ADJUST_ZONE_CELL_WIDTH+1));
 	int row = round((p.y-_rect_adjust_buttons.top)/ADJUST_ZONE_CELL_HEIGHT);
@@ -904,7 +942,7 @@ void ColorPicker::AdjustZoneMouseMove(const POINT p){
 		_show_picker_cursor = false;
 	}
 
-	if (index>=3 || row>=ADJUST_ZONE_ROW)
+	if (index>=4 || row>=ADJUST_ZONE_ROW)
 		return;
 
 	// no change
@@ -1105,10 +1143,14 @@ bool ColorPicker::rgb2hex(const RGBAColor rgb, char* out_hex, int buffer_size) {
 
 HSLAColor ColorPicker::rgb2hsl(RGBAColor rgb){
 	
-	double r, g, b;
+	double r, g, b, a;
 	r = (double)rgb.r / 255.0f;
 	g = (double)rgb.g / 255.0f;
     b = (double)rgb.b / 255.0f;
+
+	a = rgb.a;
+	a = a<0 ? 0 : a;
+	a = a>1.0f ? 1.0f : a;
 
     double max, min, delta;
 	max = max(max(r, g), b);
@@ -1150,10 +1192,10 @@ RGBAColor ColorPicker::hsl2rgb(HSLAColor hsl){
 	return hsl2rgb(hsl.h, hsl.s, hsl.l, hsl.a);
 }
 
-RGBAColor ColorPicker::hsl2rgb(double h0, double s0, double l0, float a){
+RGBAColor ColorPicker::hsl2rgb(double h0, double s0, double l0, float a0){
 
 	int r, g, b;
-	double h, s, l;
+	double h, s, l, a;
 
 	h = (int)h0 % 360 + (h0 - (int)h0);
 	if (h<0) h = 360.0f + h;
@@ -1163,6 +1205,9 @@ RGBAColor ColorPicker::hsl2rgb(double h0, double s0, double l0, float a){
 
 	l = l0<0 ? 0 : l0;
 	l = l0>1.0f ? 1.0f : l;
+
+	a = a0<0 ? 0 : a0;
+	a = a0>1.0f ? 1.0f : a;
 
 	if (s == 0)
 	{
