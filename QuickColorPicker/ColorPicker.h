@@ -40,16 +40,17 @@ namespace QuickColorPicker {
 
 	struct RGBAColor {
 		inline RGBAColor() {}
-		inline RGBAColor(unsigned char r, unsigned char g, unsigned char b, float a)
+		inline RGBAColor(byte r, byte g, byte b, float a)
 			: r(r), g(g), b(b), a(a) {}
-		inline RGBAColor(COLORREF color) {
-			r = GetRValue(color);
-			g = GetRValue(color);
-			b = GetRValue(color);
-		}
 
 		unsigned char r = 0, g = 0, b = 0;
 		float a = 1.0f;
+
+		inline RGBAColor(COLORREF color) {
+			r = GetRValue(color);
+			g = GetGValue(color);
+			b = GetBValue(color);
+		}
 
 		inline bool operator==(RGBAColor rgba) {
 			if (rgba.r == r && rgba.g == g && rgba.b == b && rgba.a == a)
@@ -67,10 +68,9 @@ namespace QuickColorPicker {
 
 	struct HSLAColor {
 		inline HSLAColor() {}
-		inline HSLAColor(unsigned int h, unsigned char s, unsigned char l, float a)
+		inline HSLAColor(double h, double s, double l, float a = 1.0f)
 			: h(h), s(s), l(l), a(a) {}
-		unsigned int h = 0;
-		unsigned char s = 0, l = 0;
+		double h = 0, s = 0, l = 0;
 		float a = 1.0f;
 	};
 
@@ -82,12 +82,6 @@ namespace QuickColorPicker {
 
 		ColorPicker();
 		~ColorPicker();
-
-		struct HSLCOLOR {
-			double h;
-			double s;
-			double l;
-		};
 
 		bool focus_on_show;
 
@@ -225,8 +219,8 @@ namespace QuickColorPicker {
 		// helper functions
 		HSLAColor rgb2hsl(const RGBAColor rgb);
 		RGBAColor hsl2rgb(const HSLAColor hsl);
-		RGBAColor hsl2rgb(const int h, const char s, const char l, const float a);
-		double hue(double h, double m1, double m2);
+		RGBAColor hsl2rgb(const double h, const double s, const double l, const float a);
+		double calc_color(double c, double t1, double t2);
 
 		int round(double number);
 

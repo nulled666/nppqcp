@@ -126,9 +126,9 @@ bool ColorPicker::SetHexColor(const char* hex_color) {
 	}
 
 	// convert to color value - color order is inverted
-	COLORREF rgb = strtol(hex_copy, NULL, 16) ^ 0xffffff;
+	COLORREF rgb = strtol(hex_copy, NULL, 16);
 	
-	RGBAColor color = RGBAColor(rgb);
+	RGBAColor color = RGBAColor(GetBValue(rgb), GetGValue(rgb), GetRValue(rgb), 1);
 
 	SetColor(color);
 
@@ -151,15 +151,22 @@ void ColorPicker::GetHexColor(char* out_hex, int buffer_size) {
 
 void ColorPicker::SetRecentColor(const RGBAColor *colors){
 
-	return; // TODO: fix this
-
 	int len = RECENT_ZONE_COLUMN*RECENT_ZONE_ROW;
 	
-	//for (int i=0; i<len; i++) {
-	//	if(colors[i]>0xffffff || colors[i]<0)
-	//		continue;
-	//	_recent_color_data[i] = colors[i];
-	//}
+	COLORREF rgb;
+	RGBAColor color;
+
+	for (int i=0; i<len; i++) {
+
+		color = colors[i];
+		rgb = (COLORREF)color;
+
+		if(rgb>0xffffff || rgb<0)
+			continue;
+
+		_recent_color_data[i] = colors[i];
+
+	}
 
 	FillRecentColorData();
 
@@ -509,14 +516,16 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 
 	_new_color = color;
 
-	// transform order for hex display
-	HSLAColor hsl = rgb2hsl(color);
-
+	// prepare data
 	char hex[8];
 	GetHexColor(hex, sizeof(hex));
+	wchar_t hex_str[8];
+
+	HSLAColor hsl = rgb2hsl(color);
 	
+	// output
 	wchar_t output[60];
-	wsprintf(output, L"#%s   HSL(%d,%d%%,%d%%)", hex, hsl.h, hsl.s, hsl.l);
+	wsprintf(output, L"#%c / HSL(%d,%d%%,%d%%)", hex, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
 	PaintColorSwatch();
@@ -557,10 +566,10 @@ void ColorPicker::GenerateColorPaletteData(){
 	row += 3;
 
 	// generate web adaptive palette colors
-	for (double l = 12.5; l < 1; l += 7.5) {
+	for (double l = 0.125; l < 1; l += 0.075) {
 		for(int i=0; i<24; i++){
 			int h = i * 15;
-			RGBAColor rgb = hsl2rgb(h, 100, l, 1);
+			RGBAColor rgb = hsl2rgb(h, 1.0, l, 1.0);
 			_color_palette_data[row][i] = rgb;
 		}
 		row++;
@@ -771,7 +780,7 @@ void ColorPicker::GenerateAdjustColors(const RGBAColor color){
 		_adjust_preserved_saturation = hsl.s;
 	}
 
-	double q[] = {20.0, 10.0, 5.0, 2.0, 0 , -2.0, -5.0, -10.0, -20.0};
+	double q[] = {20.0, 10.0, 5.0, 2.0, 1.0, 0, -1.0, -2.0, -5.0, -10.0, -20.0};
 
 	for(int i=0; i<ADJUST_ZONE_ROW; i++){
 		if(q[i]==0){
@@ -782,8 +791,8 @@ void ColorPicker::GenerateAdjustColors(const RGBAColor color){
 			continue;
 		}
 		_adjust_color_data[0][i] = hsl2rgb(hsl.h + q[i], hsl.s, hsl.l, hsl.a);
-		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]*2, hsl.l, hsl.a);
-		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i], hsl.a);
+		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/100, hsl.l, hsl.a);
+		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i]/100, hsl.a);
 	}
 
 }
@@ -1049,44 +1058,43 @@ UINT_PTR CALLBACK ColorPicker::ColorChooserWINPROC(HWND hwnd, UINT message, WPAR
 HSLAColor ColorPicker::rgb2hsl(RGBAColor rgb){
 	
 	double r, g, b;
-	r = (double)rgb.r / 255.0;
-	g = (double)rgb.g / 255.0;
-    b = (double)rgb.b / 255.0;
+	r = (double)rgb.r / 255.0f;
+	g = (double)rgb.g / 255.0f;
+    b = (double)rgb.b / 255.0f;
 
-    double max, min;
+    double max, min, delta;
 	max = max(max(r, g), b);
 	min = min(min(r, g), b);
+	delta = max - min;
 
-    double h, s, l, d;
-	l = (max + min) / 2.0;
-	d = max - min;
+    double h, s, l;
+	h = s = 0;
+	l = (max + min) / 2.0f;
 
-    if (max == min) {
-        h = s = 0;
-    } else {
+    if (delta != 0) {
 
-        s = l > 0.5 ?
-				d / (2.0 - max - min)
-			:
-				d / (max + min);
+		if (l < 0.5f) {
+			s = delta / (max + min);
+		}
+		else {
+			s = delta / (2.0f - max - min);
+		}
 
-        if (max == r) {
-            h = (g - b) / d + (g < b ? 6.0 : 0);
-		}else if(max == g){
-            h = (b - r) / d + 2.0;
+        if (r == max) {
+            h = (g - b) / delta ;
+		}else if(g == max){
+            h = (b - r) / delta + 2.0;
 		}else{
-            h = (r - g) / d + 4.0;
+            h = (r - g) / delta + 4.0;
         }
 
-        h /= 6.0;
+		h = h * 60.0f;
+		if (h < 0)
+			h += 360.0f;
 
     }
 
-	h = h * 360;
-	s = s * 100;
-	l = l * 100;
-
-	return HSLAColor((unsigned int)h, (char)s, (char)l, rgb.a);
+	return HSLAColor(h, s, l, rgb.a);
 
 }
 
@@ -1094,51 +1102,69 @@ RGBAColor ColorPicker::hsl2rgb(HSLAColor hsl){
 	return hsl2rgb(hsl.h, hsl.s, hsl.l, hsl.a);
 }
 
-RGBAColor ColorPicker::hsl2rgb(int h0, char s0, char l0, float a){
-	double h, s, l, m1, m2;
-	
-	h = ((int)h0 % 360);
-	if (h<0) h = 360 + h;
-	h = h / 360;
-	
-	s = s0<0 ? 0 : s0;
-	s = s0>100 ? 100 : s;
-	s = s / 100;
-
-	l = l0<0 ? 0 : l0;
-	l = l0>100 ? 100 : l;
-	l = l / 100;
-
-	m2 = l <= 0.5 ?
-			l * (s + 1)
-		:
-			l + s - l * s;
-
-	m1 = l * 2 - m2;
+RGBAColor ColorPicker::hsl2rgb(double h0, double s0, double l0, float a){
 
 	int r, g, b;
-	r = round( hue(h + 1.0/3, m1, m2) * 255 );
-	g = round( hue(h, m1, m2) * 255 );
-	b = round( hue(h - 1.0/3, m1, m2) * 255 );
+	double h, s, l;
+
+	h = (int)h0 % 360 + (h0 - (int)h0);
+	if (h<0) h = 360.0f + h;
+
+	s = s0<0 ? 0 : s0;
+	s = s0>1.0f ? 1.0f : s;
+
+	l = l0<0 ? 0 : l0;
+	l = l0>1.0f ? 1.0f : l;
+
+	if (s == 0)
+	{
+		r = round(l * 255.0f);
+		g = round(l * 255.0f);
+		b = round(l * 255.0f);
+	}
+	else
+	{
+		double t1, t2;
+		double th = h / 360.0f;
+
+		if (l < 0.5f)
+		{
+			t2 = l * (1.0f + s);
+		}
+		else
+		{
+			t2 = (l + s) - (l * s);
+		}
+		t1 = 2.0f * l - t2;
+
+		double tr, tg, tb;
+		tr = th + (1.0f / 3.0f);
+		tg = th;
+		tb = th - (1.0f / 3.0f);
+
+		tr = calc_color(tr, t1, t2);
+		tg = calc_color(tg, t1, t2);
+		tb = calc_color(tb, t1, t2);
+		r = round(tr * 255.0f);
+		g = round(tg * 255.0f);
+		b = round(tb * 255.0f);
+	}
 
 	return RGBAColor(r, g, b, a);
+
 }
 
-double ColorPicker::hue(double h0, double m1, double m2){
-	h0 = h0 < 0 ? h0 + 1 : (h0 > 1 ? h0 - 1 : h0);
-	if(h0 * 6 < 1){
-		return m1 + (m2 - m1) * h0 * 6;
-	} else if (h0 * 2 < 1) {
-		return m2;
-	} else if (h0 * 3 < 2) {
-		return m1 + (m2 - m1) * (2.0/3 - h0) * 6;
-	} else {
-		return m1;
-	}
+double ColorPicker::calc_color(double c, double t1, double t2){
+	if (c < 0) c += 1.0f;
+	if (c > 1) c -= 1.0f;
+	if (6.0f * c < 1.0f) return t1 + (t2 - t1) * 6.0f * c;
+	if (2.0f * c < 1.0f) return t2;
+	if (3.0f * c < 2.0f) return t1 + (t2 - t1) * (2.0f / 3.0f - c) * 6.0f;
+	return t1;
 }
 
 int ColorPicker::round(double number) {
 
-    return (number >= 0) ? (int)(number + 0.5) : (int)(number - 0.5);
+    return (number >= 0) ? (int)(number + 0.5f) : (int)(number - 0.5f);
 
 }
