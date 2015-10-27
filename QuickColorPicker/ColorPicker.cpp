@@ -98,53 +98,26 @@ void ColorPicker::SetColor(RGBAColor color) {
 
 }
 
-bool ColorPicker::SetHexColor(const char* hex_color) {
+bool ColorPicker::SetHexColor(const char* hex_str) {
 
-	// check length
-	size_t len = strlen(hex_color);
-	if(len != 3 && len != 6)
-		return false;
+	RGBAColor color;
 
-	// check hex string
-	char hex_copy[16];
-	strcpy(hex_copy, hex_color);
-	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
-	if(!is_hex)
-		return false;
+	bool result = hex2rgb(hex_str, &color);
 
-	strcpy(hex_copy, hex_color);
-
-	// pad 3 char hex
-	if (len==3) {
-		hex_copy[0] = hex_color[0];
-		hex_copy[1] = hex_color[0];
-		hex_copy[2] = hex_color[1];
-		hex_copy[3] = hex_color[1];
-		hex_copy[4] = hex_color[2];
-		hex_copy[5] = hex_color[2];
-		hex_copy[6] = L'\0';
+	if (result) {
+		_old_color = color;
+		SetColor(_old_color);
 	}
 
-	// convert to color value - color order is inverted
-	COLORREF rgb = strtol(hex_copy, NULL, 16);
-	
-	RGBAColor color = RGBAColor(GetBValue(rgb), GetGValue(rgb), GetRValue(rgb), 1);
-
-	SetColor(color);
-
-	return true;
+	return result;
 
 }
 
-void ColorPicker::GetHexColor(char* out_hex, int buffer_size) {
 
-	// check length
-	if (buffer_size < 7) {
-		return;
-	}
 
-	COLORREF color = RGB(_old_color.b, _old_color.g, _old_color.r);
-	sprintf(out_hex, "%0*X", 6, color);
+bool ColorPicker::GetHexColor(char* out_hex, int buffer_size) {
+
+	return rgb2hex(_old_color, out_hex, buffer_size);
 
 }
 
@@ -518,14 +491,13 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 
 	// prepare data
 	char hex[8];
-	GetHexColor(hex, sizeof(hex));
-	wchar_t hex_str[8];
+	rgb2hex(color, hex, sizeof(hex));
 
 	HSLAColor hsl = rgb2hsl(color);
 	
 	// output
 	wchar_t output[60];
-	wsprintf(output, L"#%c / HSL(%d,%d%%,%d%%)", hex, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
+	wsprintf(output, L"#%hs / HSL(%d,%d%%,%d%%)", hex, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
 	PaintColorSwatch();
@@ -1054,6 +1026,59 @@ UINT_PTR CALLBACK ColorPicker::ColorChooserWINPROC(HWND hwnd, UINT message, WPAR
 /////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 /////////////////////////////////////////////////////////////////////
+
+
+bool ColorPicker::hex2rgb(const char* hex_str, RGBAColor* out_color) {
+
+	// check length
+	size_t len = strlen(hex_str);
+	if (len != 3 && len != 6)
+		return false;
+
+	// check hex string
+	char hex_copy[16];
+	strcpy(hex_copy, hex_str);
+	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
+	if (!is_hex)
+		return false;
+
+	strcpy(hex_copy, hex_str);
+
+	// pad 3 char hex
+	if (len == 3) {
+		hex_copy[0] = hex_str[0];
+		hex_copy[1] = hex_str[0];
+		hex_copy[2] = hex_str[1];
+		hex_copy[3] = hex_str[1];
+		hex_copy[4] = hex_str[2];
+		hex_copy[5] = hex_str[2];
+		hex_copy[6] = L'\0';
+	}
+
+	// convert to color value - color order is inverted
+	COLORREF rgb = strtol(hex_copy, NULL, 16);
+
+	out_color->r = GetBValue(rgb);
+	out_color->g = GetGValue(rgb);
+	out_color->b = GetRValue(rgb);
+
+	return true;
+
+}
+
+bool ColorPicker::rgb2hex(const RGBAColor rgb, char* out_hex, int buffer_size) {
+
+	// check length
+	if (buffer_size < 7) {
+		return false;
+	}
+
+	COLORREF color = RGB(rgb.b, rgb.g, rgb.r);
+	sprintf(out_hex, "%0*X", 6, color);
+
+	return true;
+
+}
 
 HSLAColor ColorPicker::rgb2hsl(RGBAColor rgb){
 	

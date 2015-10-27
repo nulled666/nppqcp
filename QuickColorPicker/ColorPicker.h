@@ -123,7 +123,7 @@ namespace QuickColorPicker {
 		}
 
 		bool SetHexColor(const char* hex_color);
-		void GetHexColor(char* out_hex, int buffer_size);
+		bool GetHexColor(char* out_hex, int buffer_size);
 
 		void SetRecentColor(const RGBAColor* colors);
 		void GetRecentColor(RGBAColor* &colors);
@@ -217,6 +217,8 @@ namespace QuickColorPicker {
 		static UINT_PTR CALLBACK ColorChooserWINPROC(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 		// helper functions
+		bool hex2rgb(const char* hex_str, RGBAColor* out_color);
+		bool rgb2hex(const RGBAColor rgb, char* out_hex, int buffer_size);
 		HSLAColor rgb2hsl(const RGBAColor rgb);
 		RGBAColor hsl2rgb(const HSLAColor hsl);
 		RGBAColor hsl2rgb(const double h, const double s, const double l, const float a);
