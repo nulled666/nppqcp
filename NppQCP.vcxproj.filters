@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ColorPicker\ColorPicker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NppQCP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DllMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ColorPicker\ScreenPicker.cpp">
+    <ClCompile Include="csscolorparser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="csscolorparser.cpp">
+    <ClCompile Include="QuickColorPicker\ScreenPicker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QuickColorPicker\ColorPicker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,19 +38,10 @@
     <ClInclude Include="shared\Notepad_plus_msgs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ColorPicker\ColorPicker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ColorPicker\ColorPicker.res.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NppQCP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="shared\PluginInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ColorPicker\ScreenPicker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
@@ -59,26 +50,35 @@
     <ClInclude Include="csscolorparser.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="QuickColorPicker\ColorPicker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QuickColorPicker\ColorPicker.res.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QuickColorPicker\ScreenPicker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="NppQCP.vcproj" />
     <None Include="no_ms.props" />
     <None Include="no_ms.vsprops" />
-    <None Include="ColorPicker\picker.cur">
+    <None Include="QuickColorPicker\picker.cur">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ColorPicker\picker.ico">
+    <Image Include="misc\features.fw.png" />
+    <Image Include="QuickColorPicker\picker.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="misc\features.fw.png" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ColorPicker\ColorPicker.rc">
+    <ResourceCompile Include="NppQCP.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="NppQCP.rc">
+    <ResourceCompile Include="QuickColorPicker\ColorPicker.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

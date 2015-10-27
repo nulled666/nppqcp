@@ -11,6 +11,8 @@
 #define CONTROL_BORDER_COLOR 0x666666
 #define IDK_HIDE 101
 
+using namespace QuickColorPicker;
+
 ScreenPicker::ScreenPicker(COLORREF color){
 
 	_instance = NULL;

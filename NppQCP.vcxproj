@@ -192,16 +192,16 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ColorPicker\ColorPicker.cpp" />
-    <ClCompile Include="ColorPicker\ScreenPicker.cpp" />
+    <ClCompile Include="QuickColorPicker\ColorPicker.cpp" />
+    <ClCompile Include="QuickColorPicker\ScreenPicker.cpp" />
     <ClCompile Include="csscolorparser.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="NppQCP.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ColorPicker\ColorPicker.h" />
-    <ClInclude Include="ColorPicker\ColorPicker.res.h" />
-    <ClInclude Include="ColorPicker\ScreenPicker.h" />
+    <ClInclude Include="QuickColorPicker\ColorPicker.h" />
+    <ClInclude Include="QuickColorPicker\ColorPicker.res.h" />
+    <ClInclude Include="QuickColorPicker\ScreenPicker.h" />
     <ClInclude Include="csscolorparser.hpp" />
     <ClInclude Include="NppQCP.h" />
     <ClInclude Include="resource.h" />
@@ -210,17 +210,17 @@
     <ClInclude Include="shared\Scintilla.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ColorPicker\ColorPicker.rc" />
+    <ResourceCompile Include="QuickColorPicker\ColorPicker.rc" />
     <ResourceCompile Include="NppQCP.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ColorPicker\picker.cur" />
+    <None Include="QuickColorPicker\picker.cur" />
     <None Include="no_ms.props" />
     <None Include="no_ms.vsprops" />
     <None Include="NppQCP.vcproj" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ColorPicker\picker.ico" />
+    <Image Include="QuickColorPicker\picker.ico" />
     <Image Include="misc\features.fw.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

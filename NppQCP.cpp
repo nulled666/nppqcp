@@ -2,8 +2,8 @@
 
 #include "NppQCP.h"
 
-#include "ColorPicker\ColorPicker.h"
-#include "ColorPicker\ColorPicker.res.h"
+#include "QuickColorPicker\ColorPicker.h"
+#include "QuickColorPicker\ColorPicker.res.h"
 
 #include "csscolorparser.hpp"
 
@@ -41,7 +41,7 @@ ColorMarker _color_markers[MAX_COLOR_CODE_HIGHTLIGHT];
 int _color_marker_index = -1;
 
 // color picker /////////////////////////////////////////////
-ColorPicker* _pColorPicker = NULL;
+QuickColorPicker::ColorPicker* _pColorPicker = NULL;
 HINSTANCE _instance;
 HWND _message_window;
 
@@ -369,7 +369,7 @@ LRESULT CALLBACK NppSubclassProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM 
 
 void CreateColorPicker(){
 
-	_pColorPicker = new ColorPicker();
+	_pColorPicker = new QuickColorPicker::ColorPicker();
 	_pColorPicker->focus_on_show = false;
 	_pColorPicker->Create(_instance, nppData._nppHandle, _message_window);
 
@@ -433,18 +433,18 @@ bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const in
 	
 	int len = end - start;
 
-	// break - wrong length: fc6 ffcc66
+	// fail - wrong length: fc6 ffcc66
 	if (len != 3 && len != 6)
 		return false;
 
 	char prev_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, start - 1, 0);
-	// break - no # mark
+	// fail - no # mark
 	if (prev_char == 0 || prev_char != '#')
 		return false;
 
 	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
 
-	// break - next char is still hex char
+	// fail - next char is still hex char
 	if (next_char != 0 && strchr("01234567890abcdefABCDEF", next_char) != NULL)
 		return false;
 
@@ -472,13 +472,13 @@ bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const in
 	
 	int len = end - start;
 
-	// break - wrong length: rgb rgba
+	// fail - wrong length (rgb rgba hsl hsla)
 	if (len != 3 && len != 4)
 		return false;
 
 	char next_char = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, end, 0);
 
-	// break - next char should be the open bracket
+	// fail - next char should be the open bracket
 	if (next_char != '(')
 		return false;
 
@@ -598,15 +598,18 @@ void LoadRecentColor(){
 	if (!_pColorPicker)
 		return;
 
-	COLORREF colors[16];
+	QuickColorPicker::RGBAColor colors[16];
+	COLORREF color;
 	wchar_t key[20];
 
 	for (int i=0; i<16; i++) {
 		wsprintf(key, L"recent%d", i);
-		colors[i] = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
+		color = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
+		colors[i] = QuickColorPicker::RGBAColor(color);
 	}
 
 	_pColorPicker->SetRecentColor(colors);
+
 }
 
 void SaveRecentColor(){
@@ -614,15 +617,15 @@ void SaveRecentColor(){
 	if(!_pColorPicker)
 		return;
 
-	COLORREF colors[16];
-	COLORREF* p_colors = colors;
+	QuickColorPicker::RGBAColor colors[16];
+	QuickColorPicker::RGBAColor* p_colors = colors;
 	_pColorPicker->GetRecentColor(p_colors);
 
 	wchar_t color[20];
 	wchar_t key[20];
 
 	for (int i=0; i<16; i++) {
-		wsprintf(color, L"%d", colors[i]);
+		wsprintf(color, L"%d", (COLORREF)colors[i]);
 		wsprintf(key, L"recent%d", i);
 		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
 	}
@@ -648,6 +651,8 @@ void HighlightColorCode() {
 
     HWND h_scintilla = GetScintilla();
 
+	// determine parse region
+
     //SCI_GETFIRSTVISIBLELINE first line is 0
     int first_visible_line = ::SendMessage(h_scintilla, SCI_GETFIRSTVISIBLELINE, 0, 0);
 	int last_line = first_visible_line + (int)::SendMessage(h_scintilla, SCI_LINESONSCREEN, 0, 0);
@@ -660,10 +665,7 @@ void HighlightColorCode() {
 
 	int end_position = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, last_line, 0);
 
-	// save this to avoid conflict with search/replace
-	int current_target_start = ::SendMessage(h_scintilla, SCI_GETTARGETSTART, 0, 0);
-	int current_target_end = ::SendMessage(h_scintilla, SCI_GETTARGETEND, 0, 0);
-
+	// generate marker list
 	FindHexColor(h_scintilla, start_position, end_position);
 
 	char *suff[4] = { "rgb(", "rgba(", "hsl(", "hsla(" };
@@ -671,10 +673,7 @@ void HighlightColorCode() {
 		FindBracketColor(h_scintilla, start_position, end_position, suff[i]);
 	}
 
-	// restore target range
-	::SendMessage(h_scintilla, SCI_SETTARGETSTART, current_target_start, 0);
-	::SendMessage(h_scintilla, SCI_SETTARGETEND, current_target_end, 0);
-
+	// draw the marker list
 	DrawColorMarkers(h_scintilla);
 
 }
