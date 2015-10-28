@@ -1,8 +1,7 @@
 **A color picker plugin for Notepad++**
 The C++ Color Picker class can also be reused in other programs.
 
-Download from [[Amazon Mirror]](https://s3-ap-southeast-1.amazonaws.com/nppqcp/nppqcp-1.2.0.zip)
-[[Fosshub.com Mirror]](http://code.fosshub.com/Quick-Color-Picker-for-Notepad/downloads)
+[[Download from Amazon Mirror]](https://s3-ap-southeast-1.amazonaws.com/nppqcp/nppqcp-2.0.zip)
 
 
 v2.0
