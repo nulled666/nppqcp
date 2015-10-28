@@ -827,34 +827,53 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
 		}
 
 		// read in the possible color code sequence
-		char hex_color[9];
-		hex_color[0] = '#';
+		int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, (WPARAM)target_pos, 0);
+		int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, (WPARAM)line, 0);
+		int range_end = target_pos + 9;
+		range_end = range_end > line_end ? line_end : range_end;
 
-		int index = 1;
-		for(; index < 9; index++){
-			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos + index, 0);
-			if( t=='\0' )
+		char buff[10];
+		int buff_length = sizeof(buff);
+
+		Sci_TextRange tr;
+		tr.chrg.cpMin = target_pos;
+		tr.chrg.cpMax = range_end;
+		tr.lpstrText = buff;
+
+		::SendMessage(h_scintilla, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+		
+		bool is_valid = false;
+
+		for (int i = 1; i < 10; i++) {
+			char ch = buff[i];
+			if (strchr(" ;.)\0", ch) != NULL) {
+				// delimiter found
+				if (i == 4 || i == 7) {
+					// is the right length
+					buff[i] = '\0';
+					is_valid = true;
+				}
 				break;
-			if( strchr("0123456789abcdefABCDEF", t) == NULL )
+			}
+			else if (strchr("0123456789abcdefABCDEF", ch) == NULL){
+				// invalid char found
 				break;
-			hex_color[index] = t;
+			}
 		}
 
-		hex_color[index] = '\0';
+		// invalid - continue
+		if (!is_valid) {
+			search_start = target_pos + 1; // move on
+			continue;
+		}
 
 		// align the positions
-        int target_length = strlen(hex_color);
+        int target_length = strlen(buff);
         int target_start = target_pos;
         int target_end = target_pos + target_length;
 
-		// invalid hex color length
-        if (target_length != 4 && target_length != 7) {
-			search_start = target_end; // move on
-            continue;
-        }
-
 		// parse color string
-		CSSColorParser::Color css_color = CSSColorParser::parse(hex_color);
+		CSSColorParser::Color css_color = CSSColorParser::parse(buff);
 
 		marker_not_full = SaveColorMarker(css_color, target_start, target_end);
 
@@ -865,9 +884,9 @@ void FindHexColor(const HWND h_scintilla, const int start_position, const int en
 }
 
 
-void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position, char* suff) {
+void FindBracketColor(const HWND h_scintilla, const int start_position, const int end_position, char* prefix) {
 
-	int suff_len = strlen(suff) - 1;
+	int prefix_len = strlen(prefix) - 1;
 
 	bool marker_not_full = true;
 	int search_start = start_position;
@@ -878,7 +897,7 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 		Sci_TextToFind tf;
 		tf.chrg.cpMin = search_start;
 		tf.chrg.cpMax = search_end;
-		tf.lpstrText = suff;
+		tf.lpstrText = prefix;
 
 		int target_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
 
@@ -888,49 +907,61 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 		}
 
 		// read in the possible color code sequence
-		const int MAX_LEN = 30;
-		char bracket_color[MAX_LEN];
-		strcpy_s(bracket_color, suff);
+		int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, (WPARAM)target_pos, 0);
+		int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, (WPARAM)line, 0);
+		int range_end = target_pos + 45;
+		range_end = range_end > line_end ? line_end : range_end;
 
-		bool is_closed = false;
-		bool has_invalid_token = false;
-		int index = suff_len + 1;
-		int max_index = MAX_LEN - index - 1;
-		for (; index < max_index; index++) {
+		char buff[50];
+		int buff_length = sizeof(buff);
 
-			char t = (char)::SendMessage(h_scintilla, SCI_GETCHARAT, target_pos + index, 0);
+		Sci_TextRange tr;
+		tr.chrg.cpMin = target_pos;
+		tr.chrg.cpMax = range_end;
+		tr.lpstrText = buff;
 
-			if (t == ')') {
-				bracket_color[index] = t;
-				index++;
-				is_closed = true;
+		::SendMessage(h_scintilla, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+
+		bool is_valid = false;
+
+		for (int i = strlen(prefix) + 1; i < buff_length; i++) {
+			char ch = buff[i];
+			if (ch == '\0') {
+				// no close bracket ')' found
 				break;
 			}
-
-			if (t == '\0' || strchr("0123456789abcdefABCDEF ,.%", t) == NULL) {
-				has_invalid_token = true;
+			else if (ch == ')') {
+				if (i < 6) {
+					// too short
+					break;
+				}
+				else {
+					// close bracket ')' found, cut the end and continue
+					buff[i + 1] = '\0';
+					is_valid = true;
+					break;
+				}
+			}
+			else if (strchr("01234567890 ,.%", ch) == NULL) {
+				// contains invalid char
 				break;
 			}
-
-			bracket_color[index] = t;
-
 		}
 
-		bracket_color[index] = '\0';
-
-		// align the positions
-		int target_length = strlen(bracket_color);
-		int target_start = target_pos;
-		int target_end = target_pos + target_length;
-
-		// no close bracket / too short / too long  - continue
-		if (has_invalid_token || !is_closed || target_length < 10 || target_length > MAX_LEN) {
-			search_start = target_start + suff_len; // move on
+		// invalid - continue
+		if (!is_valid) {
+			search_start = target_pos + prefix_len; // move on
 			continue;
 		}
 
+		// align the positions
+		int target_length = strlen(buff);
+		int target_start = target_pos;
+		int target_end = target_pos + target_length;
+
+
 		// parse color string
-		CSSColorParser::Color css_color = CSSColorParser::parse(bracket_color);
+		CSSColorParser::Color css_color = CSSColorParser::parse(buff);
 
 		marker_not_full = SaveColorMarker(css_color, target_start, target_end);
 
