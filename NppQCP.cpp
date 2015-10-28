@@ -184,9 +184,9 @@ void InitCommandMenu() {
 
 	// create visit website link
 	wchar_t text[200] = L"Visit NPPQCP Website ";
-	wcscat(text, L" (Version ");
-	wcscat(text, version);
-	wcscat(text, L")");
+	wcscat_s(text, L" (Version ");
+	wcscat_s(text, version);
+	wcscat_s(text, L")");
 
 	setCommand(index++, text, VisitWebsite, NULL, FALSE);
 
@@ -200,7 +200,7 @@ bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKe
     if (!pFunc)
         return false;
 
-    wcscpy(funcItem[index]._itemName, cmdName);
+    wcscpy_s(funcItem[index]._itemName, cmdName);
     funcItem[index]._pFunc = pFunc;
     funcItem[index]._init2Check = checkOnInit;
     funcItem[index]._pShKey = sk;
@@ -660,26 +660,26 @@ void WriteColor(COLORREF color) {
 		// hex string
 		char hex[8];
 		_pColorPicker->GetHexColor(hex, sizeof(hex));
-		sprintf(buff, "#%hs", hex);
+		sprintf_s(buff, "#%hs", hex);
 
 	}else{
 		// bracket color
 		if (_current_type == TYPE_RGB) {
-			sprintf(buff, "rgb(%d,%d,%d)", rgb.r, rgb.g, rgb.b);
+			sprintf_s(buff, "rgb(%d,%d,%d)", rgb.r, rgb.g, rgb.b);
 		}
 		else if (_current_type == TYPE_RGBA){
-			sprintf(buff, "rgba(%d,%d,%d,%.2g)", rgb.r, rgb.g, rgb.b, rgb.a);
+			sprintf_s(buff, "rgba(%d,%d,%d,%.2g)", rgb.r, rgb.g, rgb.b, rgb.a);
 		}
 		else if (_current_type == TYPE_HSL || _current_type == TYPE_HSLA) {
 			QuickColorPicker::HSLAColor hsl = _pColorPicker->GetHSLAColor();
-			int h = round(hsl.h);
-			int s = round(hsl.s * 100);
-			int l = round(hsl.l * 100);
+			int h = (int)round(hsl.h);
+			int s = (int)round(hsl.s * 100);
+			int l = (int)round(hsl.l * 100);
 			if (_current_type == TYPE_HSL) {
-				sprintf(buff, "hsl(%d,%d%%,%d%%)", h, s, l);
+				sprintf_s(buff, "hsl(%d,%d%%,%d%%)", h, s, l);
 			}
 			else {
-				sprintf(buff, "hsla(%d,%d%%,%d%%,%.2g)", h, s, l, hsl.a);
+				sprintf_s(buff, "hsla(%d,%d%%,%d%%,%.2g)", h, s, l, hsl.a);
 			}
 		}
 
@@ -708,10 +708,10 @@ void LoadRecentColor(){
 	wchar_t alpha[20];
 
 	for (int i=0; i<16; i++) {
-		swprintf(key, L"recent%d", i);
+		swprintf_s(key, L"recent%d", i);
 		color = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
 		colors[i] = QuickColorPicker::RGBAColor(color);
-		swprintf(key, L"recent%d_a", i);
+		swprintf_s(key, L"recent%d_a", i);
 		color = ::GetPrivateProfileString(_ini_section, key, L"1", alpha, sizeof(alpha), _ini_file_path);
 		if (color > 0) {
 			colors[i].a = wcstof(alpha, nullptr);
@@ -735,11 +735,11 @@ void SaveRecentColor(){
 	wchar_t key[20];
 
 	for (int i=0; i<16; i++) {
-		swprintf(color, L"%d", (COLORREF)colors[i]);
-		swprintf(key, L"recent%d", i);
+		swprintf_s(color, L"%d", (COLORREF)colors[i]);
+		swprintf_s(key, L"recent%d", i);
 		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
-		swprintf(color, L"%.2g", colors[i].a);
-		swprintf(key, L"recent%d_a", i);
+		swprintf_s(color, L"%.2g", colors[i].a);
+		swprintf_s(key, L"recent%d_a", i);
 		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
 	}
 
@@ -875,7 +875,7 @@ void FindBracketColor(const HWND h_scintilla, const int start_position, const in
 		// read in the possible color code sequence
 		const int MAX_LEN = 30;
 		char bracket_color[MAX_LEN];
-		strcpy(bracket_color, suff);
+		strcpy_s(bracket_color, suff);
 
 		bool is_closed = false;
 		bool has_invalid_token = false;
