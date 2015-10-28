@@ -213,11 +213,11 @@ void ScreenPicker::SampleColor(int x, int y){
 
 	// display color text
 	wchar_t color_hex[10];
-	swprintf(color_hex, L"#%06X", _new_color);
+	swprintf_s(color_hex, L"#%06X", _new_color);
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_HEX, color_hex);
 
 	wchar_t color_rgb[20];
-	swprintf(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
+	swprintf_s(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_RGB, color_rgb);
 
 	// paint preview /////////////
@@ -285,7 +285,7 @@ void QuickColorPicker::ScreenPicker::ReduceMouseSpeed()
 {
 	// save mouse speed
 	int *ms = &_mouse_speed;
-	bool result = SystemParametersInfo(SPI_GETMOUSESPEED, 0, ms, 0);
+	BOOL result = SystemParametersInfo(SPI_GETMOUSESPEED, 0, ms, 0);
 
 	// slow it down
 	SystemParametersInfo(SPI_SETMOUSESPEED,

@@ -542,7 +542,7 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 
 	// output
 	wchar_t output[80];
-	swprintf(output, L"#%hs / HSLA(%d,%d%%,%d%%,%.2g)", hex, round(hsl.h), round(hsl.s * 100), round(hsl.l * 100), hsl.a);
+	swprintf(output, sizeof(output), L"#%hs / HSLA(%d,%d%%,%d%%,%.2g)", hex, round(hsl.h), round(hsl.s * 100), round(hsl.l * 100), hsl.a);
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
 	PaintColorCompareSwatch();
@@ -814,7 +814,7 @@ void ColorPicker::GenerateAdjustColors(const RGBAColor color){
 		_adjust_color_data[0][i] = hsl2rgb(hsl.h + q[i], hsl.s, hsl.l, hsl.a);
 		_adjust_color_data[1][i] = hsl2rgb(hsl.h, hsl.s + q[i]/100, hsl.l, hsl.a);
 		_adjust_color_data[2][i] = hsl2rgb(hsl.h, hsl.s, hsl.l + q[i]/100, hsl.a);
-		_adjust_color_data[3][i] = hsl2rgb(hsl.h, hsl.s, hsl.l, hsl.a + q[i] / 100);
+		_adjust_color_data[3][i] = hsl2rgb(hsl.h, hsl.s, hsl.l, hsl.a + (float)q[i] / 100);
 	}
 
 }
@@ -1116,12 +1116,14 @@ bool ColorPicker::hex2rgb(const char* hex_str, RGBAColor* out_color) {
 
 	// check hex string
 	char hex_copy[16];
-	strcpy(hex_copy, hex_str);
-	bool is_hex = (strtok(hex_copy, "0123456789ABCDEFabcdef") == NULL);
+	strcpy_s(hex_copy, hex_str);
+
+	char *next_token = NULL;
+	bool is_hex = (strtok_s(hex_copy, "0123456789ABCDEFabcdef", &next_token) == NULL);
 	if (!is_hex)
 		return false;
 
-	strcpy(hex_copy, hex_str);
+	strcpy_s(hex_copy, hex_str);
 
 	// pad 3 char hex
 	if (len == 3) {
@@ -1153,7 +1155,7 @@ bool ColorPicker::rgb2hex(const RGBAColor rgb, char* out_hex, int buffer_size) {
 	}
 
 	COLORREF color = RGB(rgb.b, rgb.g, rgb.r);
-	sprintf(out_hex, "%0*X", 6, color);
+	sprintf_s(out_hex, buffer_size, "%0*x", 6, color);
 
 	return true;
 
@@ -1261,7 +1263,7 @@ RGBAColor ColorPicker::hsl2rgb(double h0, double s0, double l0, float a0){
 		b = round(tb * 255.0f);
 	}
 
-	return RGBAColor(r, g, b, a);
+	return RGBAColor(r, g, b, (float)a);
 
 }
 
