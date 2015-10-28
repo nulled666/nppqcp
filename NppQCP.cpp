@@ -537,53 +537,62 @@ bool CheckSelectionForBracketColor(const HWND h_scintilla, const int start, cons
 	if (next_char != '(')
 		return false;
 
-	// check for suffix
-	char suff[5];
-	::SendMessage(h_scintilla, SCI_GETSELTEXT, 0, (LPARAM)&suff);
+	// check for prefix
+	char prefix[8];
+	::SendMessage(h_scintilla, SCI_GETSELTEXT, 0, (LPARAM)&prefix);
 
-	if (strcmp(suff,"rgb") == 0) {
+	if (strcmp(prefix,"rgb") == 0) {
 		_current_type = TYPE_RGB;
 	}
-	else if (strcmp(suff,"rgba") == 0) {
+	else if (strcmp(prefix,"rgba") == 0) {
 		_current_type = TYPE_RGBA;
 	}
-	else if (strcmp(suff, "hsl") == 0) {
+	else if (strcmp(prefix, "hsl") == 0) {
 		_current_type = TYPE_HSL;
 	}
-	else if (strcmp(suff, "hsla") == 0) {
+	else if (strcmp(prefix, "hsla") == 0) {
 		_current_type = TYPE_HSLA;
 	}
 	else {
 		return false;
 	}
 
-	// get first close bracket position
-	int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, end, 0);
-	int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, line, 0);
-
-	Sci_TextToFind tf;
-	tf.chrg.cpMin = end;
-	tf.chrg.cpMax = line_end + 1;
-	tf.lpstrText = ")";
-
-	int close_pos = ::SendMessage(h_scintilla, SCI_FINDTEXT, 0, (LPARAM)&tf);
-	if (close_pos == -1) {
-		return false;
-	}
-
-	int full_len = close_pos - start;
-	if (full_len < 5 || full_len>30)
-		return false;	// not too long
-
-
 	// read in the whole string and parse
-	char buff[35];
+	char buff[50];
 	Sci_TextRange tr;
 	tr.chrg.cpMin = start;
-	tr.chrg.cpMax = close_pos + 1;
+	tr.chrg.cpMax = end + 45;
 	tr.lpstrText = buff;
 
 	::SendMessage(h_scintilla, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+
+	// check for validity 
+	int close_pos = start;
+	int buff_len = sizeof(buff);
+
+	for (int i = strlen(prefix) + 1; i < buff_len; i++) {
+		char ch = buff[i];
+		if (ch == '\0') {
+			// no close bracket ')' found
+			return false;
+		}
+		else if ( ch == ')' ) {
+			if (i < 6) {
+				// too short
+				return false;
+			}
+			else {
+				// close bracket ')' found, cut the end and continue
+				buff[i + 1] = '\0';
+				close_pos += i;
+				break;
+			}
+		}
+		else if ( strchr("01234567890 ,.%", ch) == NULL ) {
+			// contains invalid char
+			return false;
+		}
+	}
 
 	CSSColorParser::Color color = CSSColorParser::parse(buff);
 	QuickColorPicker::RGBAColor rgb = QuickColorPicker::RGBAColor(color.r, color.g, color.b, color.a);
