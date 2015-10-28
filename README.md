@@ -16,7 +16,7 @@ v2.0
 [View Full Changelog](https://github.com/nulled666/nppqcp/blob/wiki/Changelog.md)
 
 
-![Screenshot](https://s3-ap-southeast-1.amazonaws.com/nppqcp/features-1.2.0.png)
+![Screenshot](https://s3-ap-southeast-1.amazonaws.com/nppqcp/features-2.0.png)
 
 **FEATURES**
 
