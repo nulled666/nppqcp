@@ -463,7 +463,7 @@ bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const in
 
 
 	// save selection range
-	_replace_start = start;
+	_replace_start = start - 1;
 	_replace_end = end;
 
 	// get hex text - scintilla only accept char
@@ -546,8 +546,8 @@ bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const in
 	QuickColorPicker::RGBAColor rgb = QuickColorPicker::RGBAColor(color.r, color.g, color.b, color.a);
 
 	// prepare seletion range for replacement
-	_replace_start = end + 1;
-	_replace_end = close_pos;
+	_replace_start = start;
+	_replace_end = close_pos + 1;
 
 	// put current color to picker
 	_pColorPicker->SetColor(rgb);
@@ -588,28 +588,44 @@ void WriteColor(COLORREF color) {
 
 	HWND h_scintilla = GetScintilla();
 
+	QuickColorPicker::RGBAColor rgb = _pColorPicker->GetColor();
+
+	// change type if color has alpha channel
+	if (rgb.a < 1.0f) {
+		if (_current_type == TYPE_HEX) {
+			_current_type = TYPE_RGBA;
+		}
+		else if (_current_type == TYPE_RGB) {
+			_current_type = TYPE_RGBA;
+		}
+		else if (_current_type == TYPE_HSL) {
+			_current_type = TYPE_HSLA;
+		}
+	}else{
+		if (_current_type == TYPE_RGBA) {
+			_current_type = TYPE_HEX;
+		}
+		else if (_current_type == TYPE_HSLA){
+			_current_type = TYPE_HSL;
+		}
+	}
+
 	char buff[100];
 
 	if(_current_type == TYPE_HEX){
 
 		// hex string
-		_pColorPicker->GetHexColor(buff, sizeof(buff));
+		char hex[8];
+		_pColorPicker->GetHexColor(hex, sizeof(hex));
+		sprintf(buff, "#%hs", hex);
 
 	}else{
 		// bracket color
-
-		// set replace range
-		::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _replace_start, 0);
-		::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _replace_end, 0);
-
-		if (_current_type == TYPE_RGB || _current_type == TYPE_RGBA) {
-			QuickColorPicker::RGBAColor rgb = _pColorPicker->GetColor();
-			if (_current_type == TYPE_RGB) {
-				sprintf(buff, "%d,%d,%d", rgb.r, rgb.g, rgb.b);
-			}
-			else {
-				sprintf(buff, "%d,%d,%d,%.2g", rgb.r, rgb.g, rgb.b, rgb.a);
-			}
+		if (_current_type == TYPE_RGB) {
+			sprintf(buff, "rgb(%d,%d,%d)", rgb.r, rgb.g, rgb.b);
+		}
+		else if (_current_type == TYPE_RGBA){
+			sprintf(buff, "rgba(%d,%d,%d,%.2g)", rgb.r, rgb.g, rgb.b, rgb.a);
 		}
 		else if (_current_type == TYPE_HSL || _current_type == TYPE_HSLA) {
 			QuickColorPicker::HSLAColor hsl = _pColorPicker->GetHSLAColor();
@@ -617,15 +633,18 @@ void WriteColor(COLORREF color) {
 			int s = round(hsl.s * 100);
 			int l = round(hsl.l * 100);
 			if (_current_type == TYPE_HSL) {
-				sprintf(buff, "%d,%d%%,%d%%", h, s, l);
+				sprintf(buff, "hsl(%d,%d%%,%d%%)", h, s, l);
 			}
 			else {
-				sprintf(buff, "%d,%d%%,%d%%,%.2g", h, s, l, hsl.a);
+				sprintf(buff, "hsla(%d,%d%%,%d%%,%.2g)", h, s, l, hsl.a);
 			}
 		}
 
 	}
 		
+	// replace range
+	::SendMessage(h_scintilla, SCI_SETSELECTIONSTART, _replace_start, 0);
+	::SendMessage(h_scintilla, SCI_SETSELECTIONEND, _replace_end, 0);
 	::SendMessage(h_scintilla, SCI_REPLACESEL, NULL, (LPARAM)(char*)buff);
 
 	::SetActiveWindow(h_scintilla);
