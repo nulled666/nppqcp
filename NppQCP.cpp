@@ -448,7 +448,7 @@ bool ShowColorPicker(){
 
 	bool result = CheckSelectionForHexColor(h_scintilla, selection_start, selection_end);
 	if (!result) {
-		result = CheckSelectionForRgbColor(h_scintilla, selection_start, selection_end);
+		result = CheckSelectionForBracketColor(h_scintilla, selection_start, selection_end);
 	}
 
 	if(!result)
@@ -523,7 +523,7 @@ bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const in
 
 }
 
-bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const int end){
+bool CheckSelectionForBracketColor(const HWND h_scintilla, const int start, const int end){
 	
 	int len = end - start;
 

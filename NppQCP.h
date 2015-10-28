@@ -52,7 +52,7 @@ bool HasSelection();
 void PlaceColorPickerAt(HWND h_scintilla, int pos);
 
 bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const int end);
-bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const int end);
+bool CheckSelectionForBracketColor(const HWND h_scintilla, const int start, const int end);
 
 void WriteColor(COLORREF color);
 

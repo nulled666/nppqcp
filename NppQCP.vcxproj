@@ -223,6 +223,9 @@
     <Image Include="QuickColorPicker\picker.ico" />
     <Image Include="misc\features.fw.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="misc\nppqcp_readme.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
