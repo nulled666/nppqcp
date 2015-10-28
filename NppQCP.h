@@ -9,7 +9,7 @@
 const TCHAR NPP_PLUGIN_NAME[] = TEXT("Quick Color Picker +");
 const TCHAR NPP_PLUGIN_VER[] = TEXT("1.0");
 
-const int _command_count = 4;
+const int COMMNAD_COUNT = 7;
 
 void AttachDll(HANDLE module);
 
@@ -26,6 +26,10 @@ bool setCommand(size_t index, TCHAR *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey 
 
 
 ////////////////////////////////////////////
+void InvokeColorPicker(bool use_screen_picker = false);
+void InsertByPalette();
+void PickFromScreen();
+
 void ToggleQCP();
 void ToggleColorHighlight();
 void VisitWebsite();
@@ -45,6 +49,7 @@ void CreateColorPicker();
 bool ShowColorPicker();
 void HideColorPicker();
 bool HasSelection();
+void PlaceColorPickerAt(HWND h_scintilla, int pos);
 
 bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const int end);
 bool CheckSelectionForRgbColor(const HWND h_scintilla, const int start, const int end);

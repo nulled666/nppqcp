@@ -23,7 +23,7 @@
 // The data of Notepad++ that you can use in your plugin commands
 // extern variables - don't change the name
 NppData nppData;
-FuncItem funcItem[_command_count];
+FuncItem funcItem[COMMNAD_COUNT];
 bool doCloseTag;
 
 
@@ -148,9 +148,15 @@ void InitCommandMenu() {
     //            ShortcutKey *shortcut,          // optional. Define a shortcut to trigger this command
     //            bool checkOnInit                // optional. Make this menu item be checked visually
     //            );
-	setCommand(0, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
-	setCommand(1, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
-	setCommand(2, L"---", NULL, NULL, false);
+
+	int index = 0;
+
+	setCommand(index++, L"+ Open Color Palette", InsertByPalette, NULL, false);
+	setCommand(index++, L"+ Pick Color from Screen", PickFromScreen, NULL, false);
+	setCommand(index++, L"---", NULL, NULL, false);
+	setCommand(index++, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
+	setCommand(index++, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
+	setCommand(index++, L"---", NULL, NULL, false);
 
 	// get version
 	WCHAR fileName[_MAX_PATH];
@@ -177,18 +183,18 @@ void InitCommandMenu() {
 	delete[] versionInfo;
 
 	// create visit website link
-	wchar_t text[200] = L"Visit Website ";
+	wchar_t text[200] = L"Visit NPPQCP Website ";
 	wcscat(text, L" (Version ");
 	wcscat(text, version);
 	wcscat(text, L")");
 
-	setCommand(3, text, VisitWebsite, NULL, FALSE);
+	setCommand(index++, text, VisitWebsite, NULL, FALSE);
 
 }
 
 bool setCommand(size_t index, wchar_t *cmdName, PFUNCPLUGINCMD pFunc, ShortcutKey *sk, bool checkOnInit) {
 
-    if (index >= _command_count)
+    if (index >= COMMNAD_COUNT)
         return false;
 
     if (!pFunc)
@@ -210,6 +216,39 @@ void commandMenuCleanUp() {
 ///////////////////////////////////////////////////////////
 // MENU COMMANDS
 ///////////////////////////////////////////////////////////
+
+// Open QCP directly
+void InvokeColorPicker(bool use_screen_picker) {
+
+	// create the color picker if not created
+	if (!_pColorPicker)
+		CreateColorPicker();
+
+	HWND h_scintilla = GetScintilla();
+	_replace_start = ::SendMessage(h_scintilla, SCI_GETSELECTIONSTART, 0, 0);
+	_replace_end = ::SendMessage(h_scintilla, SCI_GETSELECTIONEND, 0, 0);
+	_current_type = TYPE_HEX;
+
+	if (use_screen_picker) {
+		_pColorPicker->ShowScreenPicker();
+	}
+	else {
+		PlaceColorPickerAt(h_scintilla, _replace_start);
+		_pColorPicker->Show();
+	}
+
+}
+
+// Pick a Color from Palette
+void InsertByPalette(){
+	InvokeColorPicker();
+}
+
+// Pick a Color from screen
+void PickFromScreen() {
+	InvokeColorPicker(true);
+}
+
 
 // toggle QCP plugin
 void ToggleQCP() {
@@ -415,29 +454,34 @@ bool ShowColorPicker(){
 	if(!result)
 		return false;
 
-	// prepare coordinates
-	POINT p;
-	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION , 0, selection_start);
-	p.y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION , 0, selection_start);
-	::ClientToScreen(h_scintilla, &p);
-	 // all line height in scintilla is the same
-	int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT , 0, 1);
-
-	RECT rc;
-	rc.top = p.y;
-	rc.right = p.x; // not used anyway
-	rc.bottom = p.y + line_height;
-	rc.left = p.x;
-	
-	_pColorPicker->SetParentRect(rc);
-
 	// set and show
+	PlaceColorPickerAt(h_scintilla, selection_start);
 	_pColorPicker->Show();
 
 	return true;
 
 }
 
+void PlaceColorPickerAt(HWND h_scintilla, int pos) {
+
+	// prepare coordinates
+	POINT p;
+	p.x = ::SendMessage(h_scintilla, SCI_POINTXFROMPOSITION, 0, pos);
+	p.y = ::SendMessage(h_scintilla, SCI_POINTYFROMPOSITION, 0, pos);
+	::ClientToScreen(h_scintilla, &p);
+
+	// all line height in scintilla is the same
+	int line_height = ::SendMessage(h_scintilla, SCI_TEXTHEIGHT, 0, 1);
+
+	RECT rc;
+	rc.top = p.y;
+	rc.right = p.x; // not used anyway
+	rc.bottom = p.y + line_height;
+	rc.left = p.x;
+
+	_pColorPicker->SetParentRect(rc);
+
+}
 
 bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const int end){
 	
@@ -460,7 +504,6 @@ bool CheckSelectionForHexColor(const HWND h_scintilla, const int start, const in
 
 	// passed -
 	_current_type = TYPE_HEX;
-
 
 	// save selection range
 	_replace_start = start - 1;

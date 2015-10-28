@@ -5,7 +5,7 @@
 #include "NppQCP.h"
 
 
-extern FuncItem funcItem[_command_count];
+extern FuncItem funcItem[COMMNAD_COUNT];
 extern NppData nppData;
 extern bool doCloseTag;
 
@@ -42,7 +42,7 @@ extern "C" __declspec(dllexport) const TCHAR * getName() {
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
-	*nbF = _command_count;
+	*nbF = COMMNAD_COUNT;
 	return funcItem;
 }
 

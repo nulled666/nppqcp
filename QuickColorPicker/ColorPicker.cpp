@@ -229,6 +229,11 @@ void ColorPicker::Hide() {
 
 }
 
+void QuickColorPicker::ColorPicker::ShowScreenPicker()
+{
+	StartPickScreenColor();
+}
+
 BOOL CALLBACK ColorPicker::ColorPopupWinproc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
 
 	switch (message) {

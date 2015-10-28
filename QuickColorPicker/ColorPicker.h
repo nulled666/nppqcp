@@ -113,6 +113,8 @@ namespace QuickColorPicker {
 		void Show();
 		void Hide();
 
+		void ShowScreenPicker();
+
 		bool IsVisible() const {
 			return (::IsWindowVisible(_color_popup) ? true : false);
 		};
