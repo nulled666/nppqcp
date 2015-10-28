@@ -461,9 +461,9 @@ void ColorPicker::DrawColorBlock(const HDC hdc, const RECT rc, const RGBAColor c
 		hbrush = ::CreateSolidBrush((COLORREF)rgb);
 	}
 	else {
-		COLORREF fgcolor = mixcolor(rgb, RGBAColor(223, 223, 223, 1));
+		COLORREF fgcolor = mixcolor(rgb, RGBAColor(182, 182, 182, 1));
 		COLORREF bkcolor = mixcolor(rgb, RGBAColor(255, 255, 255, 1));
-		hbrush = ::CreateHatchBrush(HS_DIAGCROSS, fgcolor);
+		hbrush = ::CreateHatchBrush(HS_FDIAGONAL, fgcolor);
 		::SetBkColor(hdc, bkcolor);
 	}
 
@@ -529,10 +529,10 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 	rgb2hex(color, hex, sizeof(hex));
 
 	HSLAColor hsl = rgb2hsl(color);
-	
+
 	// output
-	wchar_t output[60];
-	wsprintf(output, L"#%hs / HSL(%d,%d%%,%d%%)", hex, round(hsl.h), round(hsl.s*100), round(hsl.l*100));
+	wchar_t output[80];
+	swprintf(output, L"#%hs / HSLA(%d,%d%%,%d%%,%.2g)", hex, round(hsl.h), round(hsl.s * 100), round(hsl.l * 100), hsl.a);
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
 	PaintColorCompareSwatch();

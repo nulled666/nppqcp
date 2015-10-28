@@ -593,7 +593,6 @@ void WriteColor(COLORREF color) {
 	if(_current_type == TYPE_HEX){
 
 		// hex string
-
 		_pColorPicker->GetHexColor(buff, sizeof(buff));
 
 	}else{
@@ -644,11 +643,17 @@ void LoadRecentColor(){
 	QuickColorPicker::RGBAColor colors[16];
 	COLORREF color;
 	wchar_t key[20];
+	wchar_t alpha[20];
 
 	for (int i=0; i<16; i++) {
-		wsprintf(key, L"recent%d", i);
+		swprintf(key, L"recent%d", i);
 		color = ::GetPrivateProfileInt(_ini_section, key, 0, _ini_file_path);		
 		colors[i] = QuickColorPicker::RGBAColor(color);
+		swprintf(key, L"recent%d_a", i);
+		color = ::GetPrivateProfileString(_ini_section, key, L"1", alpha, sizeof(alpha), _ini_file_path);
+		if (color > 0) {
+			colors[i].a = wcstof(alpha, nullptr);
+		}
 	}
 
 	_pColorPicker->SetRecentColor(colors);
@@ -668,8 +673,11 @@ void SaveRecentColor(){
 	wchar_t key[20];
 
 	for (int i=0; i<16; i++) {
-		wsprintf(color, L"%d", (COLORREF)colors[i]);
-		wsprintf(key, L"recent%d", i);
+		swprintf(color, L"%d", (COLORREF)colors[i]);
+		swprintf(key, L"recent%d", i);
+		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
+		swprintf(color, L"%.2g", colors[i].a);
+		swprintf(key, L"recent%d_a", i);
 		::WritePrivateProfileString(_ini_section, key, color, _ini_file_path);
 	}
 
