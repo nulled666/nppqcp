@@ -559,9 +559,15 @@ bool CheckSelectionForBracketColor(const HWND h_scintilla, const int start, cons
 
 	// read in the whole string and parse
 	char buff[50];
+
+	int line = ::SendMessage(h_scintilla, SCI_LINEFROMPOSITION, (WPARAM)start, 0);
+	int line_end = ::SendMessage(h_scintilla, SCI_GETLINEENDPOSITION, (WPARAM)line, 0);
+	int range_end = end + 45;
+	range_end = range_end > line_end ? line_end : range_end;
+
 	Sci_TextRange tr;
 	tr.chrg.cpMin = start;
-	tr.chrg.cpMax = end + 45;
+	tr.chrg.cpMax = range_end;
 	tr.lpstrText = buff;
 
 	::SendMessage(h_scintilla, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
