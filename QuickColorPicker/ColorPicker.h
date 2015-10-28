@@ -199,7 +199,7 @@ namespace QuickColorPicker {
 		void DisplayNewColor(RGBAColor color);
 
 		// palette
-		void GenerateColorPaletteData();
+		void GenerateColorPaletteData(float alpha = 1.0f);
 		void LoadRecentColorData();
 		void SaveToRecentColor(RGBAColor color);
 		void FillRecentColorData();

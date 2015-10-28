@@ -94,6 +94,9 @@ void ColorPicker::SetColor(RGBAColor color) {
 	_adjust_color = _old_color;
 	_old_color_found_in_palette = false;
 
+	GenerateColorPaletteData(color.a);
+	FillRecentColorData();
+
 	PaintAll();
 
 }
@@ -287,6 +290,8 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 		{
 			COLORREF rgb = (COLORREF)wparam;
 			RGBAColor color = RGBAColor(rgb);
+			color.a = 1.0f;
+			SetColor(color);
 			SaveToRecentColor(color);
 			::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
 			::SendMessage(_message_window, WM_QCP_PICK, wparam, 0);
@@ -543,7 +548,7 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 ///////////////////////////////////////////////////////////////////
 // COLOR PALETTE
 ///////////////////////////////////////////////////////////////////
-void ColorPicker::GenerateColorPaletteData(){
+void ColorPicker::GenerateColorPaletteData(float alpha){
 
 	int row = 0;
 
@@ -564,9 +569,9 @@ void ColorPicker::GenerateColorPaletteData(){
 		if (t2 < 0) t2 = t2s = 0;
 		if (t2s > 0xff) t2s = 0xff;
 		
-		_color_palette_data[row][i] = RGBAColor(t0, t0, t0, 1);
-		_color_palette_data[row + 1][i] = RGBAColor(t1, t1, t1s, 1);
-		_color_palette_data[row + 2][i] = RGBAColor(t2, t2, t2s, 1);
+		_color_palette_data[row][i] = RGBAColor(t0, t0, t0, alpha);
+		_color_palette_data[row + 1][i] = RGBAColor(t1, t1, t1s, alpha);
+		_color_palette_data[row + 2][i] = RGBAColor(t2, t2, t2s, alpha);
 	
 	}
 	
@@ -576,7 +581,7 @@ void ColorPicker::GenerateColorPaletteData(){
 	for (double l = 0.125; l < 1; l += 0.075) {
 		for(int i=0; i<24; i++){
 			int h = i * 15;
-			RGBAColor rgb = hsl2rgb(h, 1.0, l, 1.0);
+			RGBAColor rgb = hsl2rgb(h, 1.0, l, alpha);
 			_color_palette_data[row][i] = rgb;
 		}
 		row++;
@@ -681,6 +686,7 @@ void ColorPicker::PaintColorPalette(){
 
 	}
 
+
 	::ReleaseDC(_color_popup, hdc);
 
 	// mark current color
@@ -756,7 +762,6 @@ void ColorPicker::PaletteMouseMove(const POINT p){
 void ColorPicker::PaletteMouseClick(const POINT p, bool is_right_button){
 
 	if(!is_right_button){
-		_new_color.a = _old_color.a; // save the alpha value
 		_old_color = _new_color;
 		SaveToRecentColor(_old_color);
 		::SendMessage(_message_window, WM_QCP_PICK, RGB(_old_color.r, _old_color.g, _old_color.b), 0);
@@ -984,6 +989,14 @@ void ColorPicker::AdjustZoneMouseClick(const POINT p, bool is_right_button){
 	_adjust_color = color;
 	PaintAdjustZone();
 	DrawAdjustZoneHoverBox(_adjust_row, _adjust_index, true);
+
+	// update pallete as well
+	if (_adjust_index == 3) {
+		GenerateColorPaletteData(color.a);
+		FillRecentColorData();
+		PaintColorPalette();
+	}
+
 
 	// update preview color
 	color = _adjust_color_data[_adjust_index][_adjust_row];
