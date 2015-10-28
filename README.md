@@ -5,7 +5,7 @@ Download from [[Amazon Mirror]](https://s3-ap-southeast-1.amazonaws.com/nppqcp/n
 [[Fosshub.com Mirror]](http://code.fosshub.com/Quick-Color-Picker-for-Notepad/downloads)
 
 
-v1.2.0
+v2.0
 * Fixed crash problem cause by Scintilla RegExp search interface
 * Use self-drawn underline marker to avoid comflict with other plugins & features
 * Added Color Picker & Screen Picker commands for hotkey assignment
@@ -41,3 +41,4 @@ v1.2.0
 *  Access Windows Color Chooser
  * recent colors will appear in custom colors list
 
+This project is using https://github.com/kkaefer/css-color-parser-cpp for css color parse.
