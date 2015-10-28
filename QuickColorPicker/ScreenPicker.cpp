@@ -10,6 +10,7 @@
 #define INFO_WINDOW_HEIGHT 140
 #define CONTROL_BORDER_COLOR 0x666666
 #define IDK_HIDE 101
+#define IDK_SLOW_MOUSE 102
 
 using namespace QuickColorPicker;
 
@@ -118,6 +119,26 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			return TRUE;
 		}
 		case WM_HOTKEY:
+		{
+			int key = (int)wparam;
+
+			if (key == IDK_HIDE) {
+				End();
+			}
+
+			if (key == IDK_SLOW_MOUSE) {
+				if (!_slow_mouse) {
+					_slow_mouse = true;
+					ReduceMouseSpeed();
+				}
+				else {
+					_slow_mouse = false;
+					RestoreMouseSpeed();
+				}
+			}
+
+			return TRUE;
+		}
 		case WM_RBUTTONUP:
 		{
 			End();
@@ -155,6 +176,7 @@ void ScreenPicker::Start(){
 	_is_shown = true;
 
 	::RegisterHotKey(_mask_window, IDK_HIDE, 0, VK_ESCAPE);
+	::RegisterHotKey(_mask_window, IDK_SLOW_MOUSE, 0, VK_SPACE);
 
 }
 
@@ -164,8 +186,12 @@ void ScreenPicker::End(){
 	::ShowWindow(_info_window, SW_HIDE);
 
 	_is_shown = false;
+	
+	if(_slow_mouse)
+		RestoreMouseSpeed();
 
 	::UnregisterHotKey(_mask_window, IDK_HIDE);
+	::UnregisterHotKey(_mask_window, IDK_SLOW_MOUSE);
 
 }
 
@@ -187,11 +213,11 @@ void ScreenPicker::SampleColor(int x, int y){
 
 	// display color text
 	wchar_t color_hex[10];
-	wsprintf(color_hex, L"#%06X", _new_color);
+	swprintf(color_hex, L"#%06X", _new_color);
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_HEX, color_hex);
 
 	wchar_t color_rgb[20];
-	wsprintf(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
+	swprintf(color_rgb, L"%d, %d, %d", GetRValue(_new_color), GetGValue(_new_color), GetBValue(_new_color));
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_RGB, color_rgb);
 
 	// paint preview /////////////
@@ -252,6 +278,33 @@ void ScreenPicker::SampleColor(int x, int y){
 
 	::ReleaseDC(_info_window, hdc_win);
 
+}
+
+
+void QuickColorPicker::ScreenPicker::ReduceMouseSpeed()
+{
+	// save mouse speed
+	int *ms = &_mouse_speed;
+	bool result = SystemParametersInfo(SPI_GETMOUSESPEED, 0, ms, 0);
+
+	// slow it down
+	SystemParametersInfo(SPI_SETMOUSESPEED,
+		0,
+		(LPVOID)1,
+		SPIF_UPDATEINIFILE ||
+		SPIF_SENDCHANGE ||
+		SPIF_SENDWININICHANGE);
+
+}
+
+void QuickColorPicker::ScreenPicker::RestoreMouseSpeed()
+{
+	SystemParametersInfo(SPI_SETMOUSESPEED,
+		0,
+		(LPVOID)_mouse_speed,
+		SPIF_UPDATEINIFILE ||
+		SPIF_SENDCHANGE ||
+		SPIF_SENDWININICHANGE);
 }
 
 
@@ -323,10 +376,10 @@ void ScreenPicker::PrepareInfoWindow(){
 	HWND ctrl;
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_RGB);
-	::MoveWindow(ctrl, 140, INFO_WINDOW_HEIGHT-38, 80, 16, false);
+	::MoveWindow(ctrl, 138, INFO_WINDOW_HEIGHT-22, 80, 16, false);
 
 	ctrl = ::GetDlgItem(_info_window, IDC_SCR_COLOR_HEX);
-	::MoveWindow(ctrl, 140, INFO_WINDOW_HEIGHT-22, 80, 16, false);
+	::MoveWindow(ctrl, 138, INFO_WINDOW_HEIGHT-38, 80, 16, false);
 
 }
 

@@ -40,6 +40,9 @@ namespace QuickColorPicker {
 
 		HCURSOR _cursor;
 
+		bool _slow_mouse = false;
+		int _mouse_speed = 10;
+
 		COLORREF _old_color;
 		COLORREF _new_color;
 
@@ -56,6 +59,8 @@ namespace QuickColorPicker {
 
 		void SampleColor(int x, int y);
 
+		void ReduceMouseSpeed();
+		void RestoreMouseSpeed();
 	};
 
 }
