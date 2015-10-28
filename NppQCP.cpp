@@ -55,6 +55,9 @@ bool _enable_qcp = false;
 bool _enable_qcp_highlight = false;
 bool _is_color_picker_shown = false;
 
+int _qcp_cmd_index = 0;
+int _highlight_cmd_index = 0;
+
 int _current_type = 0;
 int _replace_start = -1;
 int _replace_end = -1;
@@ -154,8 +157,10 @@ void InitCommandMenu() {
 	setCommand(index++, L"+ Open Color Palette", InsertByPalette, NULL, false);
 	setCommand(index++, L"+ Pick Color from Screen", PickFromScreen, NULL, false);
 	setCommand(index++, L"---", NULL, NULL, false);
-	setCommand(index++, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
-	setCommand(index++, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
+	_qcp_cmd_index = index++;
+	setCommand(_qcp_cmd_index, L"Enable Quick Color Picker", ToggleQCP, NULL, _enable_qcp);
+	_highlight_cmd_index = index++;
+	setCommand(_highlight_cmd_index, L"Enable Color Highlight", ToggleColorHighlight, NULL, _enable_qcp_highlight);
 	setCommand(index++, L"---", NULL, NULL, false);
 
 	// get version
@@ -258,11 +263,11 @@ void ToggleQCP() {
 	if (_enable_qcp) {
 		HighlightColorCode();
 	} else {
-		//RemoveColorHighlight();
+		ClearColorMarkers();
 		HideColorPicker();
 	}
 
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[0]._cmdID, MF_BYCOMMAND | (_enable_qcp ? MF_CHECKED : MF_UNCHECKED));
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[_qcp_cmd_index]._cmdID, MF_BYCOMMAND | (_enable_qcp ? MF_CHECKED : MF_UNCHECKED));
 
 }
 
@@ -272,7 +277,7 @@ void ToggleColorHighlight() {
 
 	_enable_qcp_highlight = !_enable_qcp_highlight;
 
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[1]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[_highlight_cmd_index]._cmdID, MF_BYCOMMAND | (_enable_qcp_highlight ? MF_CHECKED : MF_UNCHECKED));
 
 	if (_enable_qcp_highlight) {
 		HighlightColorCode();
