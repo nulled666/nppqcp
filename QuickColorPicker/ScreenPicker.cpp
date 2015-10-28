@@ -213,7 +213,7 @@ void ScreenPicker::SampleColor(int x, int y){
 
 	// display color text
 	wchar_t color_hex[10];
-	swprintf_s(color_hex, L"#%06X", _new_color);
+	swprintf_s(color_hex, L"#%06x", _new_color);
 	::SetDlgItemText(_info_window, IDC_SCR_COLOR_HEX, color_hex);
 
 	wchar_t color_rgb[20];

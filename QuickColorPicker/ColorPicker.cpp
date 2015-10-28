@@ -1155,7 +1155,7 @@ bool ColorPicker::rgb2hex(const RGBAColor rgb, char* out_hex, int buffer_size) {
 	}
 
 	COLORREF color = RGB(rgb.b, rgb.g, rgb.r);
-	sprintf_s(out_hex, buffer_size, "%0*x", 6, color);
+	sprintf_s(out_hex, buffer_size, "%06x", color);
 
 	return true;
 
