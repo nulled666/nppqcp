@@ -296,7 +296,7 @@ BOOL CALLBACK ColorPicker::ColorPopupMessageHandle(UINT message, WPARAM wparam, 
 			COLORREF rgb = (COLORREF)wparam;
 			RGBAColor color = RGBAColor(rgb);
 			color.a = 1.0f;
-			SetColor(color);
+			_old_color = color;
 			SaveToRecentColor(color);
 			::SendMessage(_message_window, WM_QCP_END_SCREEN_PICKER, 0, 0);
 			::SendMessage(_message_window, WM_QCP_PICK, wparam, 0);
@@ -1078,7 +1078,9 @@ void ColorPicker::ShowColorChooser(){
 	_is_color_chooser_shown = true;
 
 	if (ChooseColor(&cc)==TRUE) {
-		SaveToRecentColor(RGBAColor(cc.rgbResult));
+		RGBAColor color = RGBAColor(cc.rgbResult);
+		_old_color = color;
+		SaveToRecentColor(color);
 		::SendMessage(_message_window, WM_QCP_PICK, cc.rgbResult, 0);
 	} else {
 		::SendMessage(_message_window, WM_QCP_CANCEL, 0, 0);
