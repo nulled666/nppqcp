@@ -110,6 +110,10 @@ BOOL ScreenPicker::MaskWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 			int x = GET_X_LPARAM(lparam);
 			int y = GET_Y_LPARAM(lparam);
 			SampleColor(x, y);
+
+			// NOTE: possible fix for display glitch
+			::InvalidateRect(_mask_window, NULL, true);
+
 			return TRUE;
 		}
 		case WM_LBUTTONUP:
