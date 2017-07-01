@@ -93,7 +93,7 @@ LRESULT CALLBACK ScreenPicker::MaskWindowWINPROC(HWND hwnd, UINT message, WPARAM
 		}
 		default:
 		{
-			ScreenPicker* pScreenPicker = reinterpret_cast<ScreenPicker*>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
+			ScreenPicker* pScreenPicker = reinterpret_cast<ScreenPicker*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (!pScreenPicker)
 				return FALSE;
 			return pScreenPicker->MaskWindowMessageHandle(message, wparam, lparam);
@@ -336,7 +336,7 @@ BOOL CALLBACK ScreenPicker::InfoWindowWINPROC(HWND hwnd, UINT message, WPARAM wp
 		}
 		default:
 		{
-			ScreenPicker *pScreenPicker = reinterpret_cast<ScreenPicker*>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
+			ScreenPicker *pScreenPicker = reinterpret_cast<ScreenPicker*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (!pScreenPicker)
 				return FALSE;
 			return pScreenPicker->InfoWindowMessageHandle(message, wparam, lparam);
@@ -375,7 +375,7 @@ BOOL ScreenPicker::InfoWindowMessageHandle(UINT message, WPARAM wparam, LPARAM l
 void ScreenPicker::PrepareInfoWindow(){
 
 	::SetWindowPos(_info_window, HWND_TOP, 0, 0, INFO_WINDOW_WIDTH, INFO_WINDOW_HEIGHT, SWP_HIDEWINDOW);
-	::SetWindowLong(_info_window, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
+	::SetWindowLongPtr(_info_window, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
 
 	HWND ctrl;
 

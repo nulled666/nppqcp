@@ -254,7 +254,7 @@ BOOL CALLBACK ColorPicker::ColorPopupWinproc(HWND hwnd, UINT message, WPARAM wpa
 		}
 		default:
 		{
-			ColorPicker *pColorPicker = reinterpret_cast<ColorPicker*>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
+			ColorPicker *pColorPicker = reinterpret_cast<ColorPicker*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			if (!pColorPicker)
 				return FALSE;
 			return pColorPicker->ColorPopupMessageHandle(message, wparam, lparam);
