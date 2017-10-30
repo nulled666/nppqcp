@@ -542,7 +542,7 @@ void ColorPicker::DisplayNewColor(RGBAColor color){
 
 	// output
 	wchar_t output[80];
-	swprintf(output, sizeof(output), L"#%hs / HSLA(%d,%d%%,%d%%,%.2g)", hex, round(hsl.h), round(hsl.s * 100), round(hsl.l * 100), hsl.a);
+	swprintf(output, sizeof(output)/sizeof(wchar_t), L"#%hs / HSLA(%d,%d%%,%d%%,%.2g)", hex, round(hsl.h), round(hsl.s * 100), round(hsl.l * 100), hsl.a);
 	::SetDlgItemText(_color_popup, IDC_COLOR_TEXT, output);
 
 	PaintColorCompareSwatch();
@@ -562,7 +562,6 @@ void ColorPicker::GenerateColorPaletteData(float alpha){
 
 		int t0 = (i-RECENT_ZONE_COLUMN)*0x11;
 		if (t0 < 0) t0 = 0;
-		if (t0 > 0xFF) t0 = 0xFF;
 	
 		int t1 = t0 + 0x02;
 		int t1s = t1 - 0x0F;
