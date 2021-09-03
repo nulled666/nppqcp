@@ -1,3 +1,7 @@
+# This project was discontined
+The author has switched his primary code editor to VS Code.
+
+# Original Intro Content
 **A color picker plugin for Notepad++**
 The C++ Color Picker class can also be reused in other programs.
 
@@ -6,7 +10,7 @@ The C++ Color Picker class can also be reused in other programs.
 
 v2.0
 * Fixed crash problem cause by Scintilla RegExp search interface
-* Use self-drawn underline marker to avoid comflict with other plugins & features
+* Use self-drawn underline marker to avoid conflict with other plugins & features
 * Added Color Picker & Screen Picker commands for hotkey assignment
 * Added HSL & HSLA color format support
 * Added transparent color support (with adjustment)
